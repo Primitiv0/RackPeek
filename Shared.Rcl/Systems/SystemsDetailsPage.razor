@@ -27,10 +27,6 @@
     {
         @if (_system != null)
         {
-            <h1 class="text-lg text-zinc-100 mb-6">
-                @_system.Name (@_system.Kind)
-            </h1>
-
             <SystemCardComponent System="_system" OnSave="UpdateSystem" OnDeleted="OnDeleted"/>
         }
 

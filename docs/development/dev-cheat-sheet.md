@@ -103,6 +103,13 @@ Build Web image (required before running tests):
 
 ```bash
 docker build -t rackpeek:ci -f RackPeek.Web/Dockerfile .
+
+
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -f ./Dockerfile \
+  -t aptacode/rackpeek-qa:latest \
+  --push ..
 ```
 
 ---

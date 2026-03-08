@@ -1,0 +1,353 @@
+@using RackPeek.Domain.Git
+@using RackPeek.Domain.Git.UseCases
+@using RackPeek.Domain.Persistence
+@inject InitRepoUseCase InitRepo
+@inject CommitAllUseCase CommitAll
+@inject RestoreAllUseCase RestoreAll
+@inject PushUseCase PushUseCase
+@inject PullUseCase PullUseCase
+@inject AddRemoteUseCase AddRemoteUseCase
+@inject IGitRepository GitRepo
+@inject IResourceCollection Resources
+@implements IDisposable
+
+<div class="flex items-center gap-3 text-xs">
+
+    @if (_status == GitRepoStatus.Clean)
+    {
+        <span class="flex items-center gap-1 text-zinc-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            Saved
+        </span>
+    }
+    else if (_status == GitRepoStatus.Dirty)
+    {
+        <span class="flex items-center gap-1 text-zinc-400">
+            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+        </span>
+
+        <span class="text-zinc-600">·</span>
+
+        <button class="hover:text-emerald-400"
+                disabled="@_isBusy"
+                @onclick="CommitAsync">
+            @(_isCommitting ? "Saving…" : "Save")
+        </button>
+
+        <span class="text-zinc-600">·</span>
+
+        <button class="hover:text-red-400"
+                disabled="@_isBusy"
+                @onclick="DiscardAsync">
+            @(_isRestoring ? "Discarding…" : "Discard")
+        </button>
+    }
+
+    @if (!_hasRemote)
+    {
+        <span class="text-zinc-600">·</span>
+
+        @if (_showAddRemote)
+        {
+            <input type="text"
+                   class="px-2 py-1 text-xs rounded bg-zinc-800 border border-zinc-700 text-zinc-200 w-56"
+                   placeholder="https://github.com/user/repo.git"
+                   @bind="_remoteUrl"
+                   @bind:event="oninput" />
+
+            <button class="hover:text-emerald-400"
+                    disabled="@(string.IsNullOrWhiteSpace(_remoteUrl))"
+                    @onclick="AddRemoteAsync">
+                Add
+            </button>
+
+            <button class="hover:text-zinc-400"
+                    @onclick="CancelAddRemote">
+                Cancel
+            </button>
+        }
+        else
+        {
+            <button class="text-zinc-400 hover:text-emerald-400"
+                    @onclick="() => _showAddRemote = true">
+                Add Remote
+            </button>
+        }
+    }
+    else
+    {
+        <span class="text-zinc-600">·</span>
+
+        <button class="text-zinc-400 hover:text-white"
+                disabled="@(_isSyncing || _isFetching)"
+                @onclick="ToggleSyncAsync">
+
+            @if (_isFetching)
+            {
+                <span>Checking…</span>
+            }
+            else
+            {
+                <span>
+                    Sync
+                    @if (_syncStatus.Ahead > 0)
+                    {
+                        <span class="text-emerald-400"> ↑@_syncStatus.Ahead</span>
+                    }
+                    @if (_syncStatus.Behind > 0)
+                    {
+                        <span class="text-blue-400"> ↓@_syncStatus.Behind</span>
+                    }
+                </span>
+            }
+        </button>
+
+        @if (_syncStatus.Ahead > 0)
+        {
+            <span class="text-zinc-600">·</span>
+
+            <button class="hover:text-emerald-400"
+                    disabled="@_isSyncing"
+                    @onclick="PushAsync">
+                @(_isPushing ? "Pushing…" : "Push")
+            </button>
+        }
+
+        @if (_syncStatus.Behind > 0)
+        {
+            <span class="text-zinc-600">·</span>
+
+            <button class="hover:text-blue-400"
+                    disabled="@_isSyncing"
+                    @onclick="PullAsync">
+                @(_isPulling ? "Pulling…" : "Pull")
+            </button>
+        }
+    }
+
+    @if (_errorMessage is not null)
+    {
+        <span class="text-red-400">@_errorMessage</span>
+    }
+</div>
+
+@code {
+
+    private GitRepoStatus _status = GitRepoStatus.NotAvailable;
+
+    private bool _isCommitting;
+    private bool _isRestoring;
+    private bool _showAddRemote;
+    private bool _hasRemote;
+
+    private bool _isFetching;
+    private bool _isPushing;
+    private bool _isPulling;
+
+    private string? _errorMessage;
+    private string _remoteUrl = "";
+
+    private PeriodicTimer? _timer;
+    private CancellationTokenSource? _cts;
+
+    private GitSyncStatus _syncStatus = new(0, 0, false);
+
+    private bool _isBusy => _isCommitting || _isRestoring || _isSyncing;
+    private bool _isSyncing => _isPushing || _isPulling || _isFetching;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _status = await Task.Run(() => GitRepo.GetStatus());
+
+        if (_status == GitRepoStatus.NotAvailable)
+            return;
+
+        _hasRemote = await Task.Run(() => GitRepo.HasRemote());
+
+        _cts = new CancellationTokenSource();
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(15));
+
+        _ = PollStatusAsync(_cts.Token);
+    }
+
+    private async Task PollStatusAsync(CancellationToken ct)
+    {
+        try
+        {
+            while (_timer != null && await _timer.WaitForNextTickAsync(ct))
+            {
+                if (_isBusy)
+                    continue;
+
+                var newStatus = await Task.Run(() => GitRepo.GetStatus(), ct);
+
+                if (newStatus != _status)
+                {
+                    _status = newStatus;
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+        }
+        catch (OperationCanceledException) {}
+    }
+
+    private void CancelAddRemote()
+    {
+        _showAddRemote = false;
+        _remoteUrl = "";
+    }
+
+    private async Task AddRemoteAsync()
+    {
+        _errorMessage = null;
+
+        try
+        {
+            var error = await AddRemoteUseCase.ExecuteAsync(_remoteUrl);
+
+            if (error != null)
+            {
+                _errorMessage = error;
+                return;
+            }
+
+            _hasRemote = true;
+            _showAddRemote = false;
+            _remoteUrl = "";
+
+            _syncStatus = await Task.Run(() => GitRepo.FetchAndGetSyncStatus());
+
+            if (_syncStatus.Behind > 0)
+                await PullAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Remote error: {ex.Message}";
+        }
+    }
+
+    private async Task CommitAsync()
+    {
+        _errorMessage = null;
+        _isCommitting = true;
+
+        try
+        {
+            var error = await CommitAll.ExecuteAsync(
+                $"rackpeek: save config {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
+
+            if (error != null)
+                _errorMessage = error;
+
+            _status = await Task.Run(() => GitRepo.GetStatus());
+
+            await Resources.LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Commit error: {ex.Message}";
+        }
+        finally
+        {
+            _isCommitting = false;
+        }
+    }
+
+    private async Task ToggleSyncAsync()
+    {
+        _isFetching = true;
+
+        try
+        {
+            _syncStatus = await Task.Run(() => GitRepo.FetchAndGetSyncStatus());
+        }
+        finally
+        {
+            _isFetching = false;
+        }
+    }
+
+    private async Task PushAsync()
+    {
+        _errorMessage = null;
+        _isPushing = true;
+
+        try
+        {
+            var error = await PushUseCase.ExecuteAsync();
+
+            if (error != null)
+                _errorMessage = error;
+
+            _syncStatus = await Task.Run(() => GitRepo.FetchAndGetSyncStatus());
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Push error: {ex.Message}";
+        }
+        finally
+        {
+            _isPushing = false;
+        }
+    }
+
+    private async Task PullAsync()
+    {
+        _errorMessage = null;
+        _isPulling = true;
+
+        try
+        {
+            var error = await PullUseCase.ExecuteAsync();
+
+            if (error != null)
+                _errorMessage = error;
+
+            _syncStatus = await Task.Run(() => GitRepo.FetchAndGetSyncStatus());
+            _status = await Task.Run(() => GitRepo.GetStatus());
+
+            await Resources.LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Pull error: {ex.Message}";
+        }
+        finally
+        {
+            _isPulling = false;
+        }
+    }
+
+    private async Task DiscardAsync()
+    {
+        _errorMessage = null;
+        _isRestoring = true;
+
+        try
+        {
+            var error = await RestoreAll.ExecuteAsync();
+
+            if (error != null)
+                _errorMessage = error;
+
+            _status = await Task.Run(() => GitRepo.GetStatus());
+
+            await Resources.LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Discard error: {ex.Message}";
+        }
+        finally
+        {
+            _isRestoring = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _timer?.Dispose();
+    }
+}
