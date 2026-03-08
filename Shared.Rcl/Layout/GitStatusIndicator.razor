@@ -1,5 +1,6 @@
 @using RackPeek.Domain.Git
 @using RackPeek.Domain.Git.UseCases
+@using RackPeek.Domain.Persistence
 @inject InitRepoUseCase InitRepo
 @inject CommitAllUseCase CommitAll
 @inject RestoreAllUseCase RestoreAll
@@ -7,272 +8,166 @@
 @inject PullUseCase PullUseCase
 @inject AddRemoteUseCase AddRemoteUseCase
 @inject IGitRepository GitRepo
+@inject IResourceCollection Resources
 @implements IDisposable
 
-@if (_status == GitRepoStatus.NotAvailable)
-{
-    <div class="flex items-center gap-2 text-sm" data-testid="git-init-indicator">
-        @if (_confirmInit)
+<div class="flex items-center gap-3 text-xs">
+
+    @if (_status == GitRepoStatus.Clean)
+    {
+        <span class="flex items-center gap-1 text-zinc-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            Saved
+        </span>
+    }
+    else if (_status == GitRepoStatus.Dirty)
+    {
+        <span class="flex items-center gap-1 text-zinc-400">
+            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+        </span>
+
+        <span class="text-zinc-600">·</span>
+
+        <button class="hover:text-emerald-400"
+                disabled="@_isBusy"
+                @onclick="CommitAsync">
+            @(_isCommitting ? "Saving…" : "Save")
+        </button>
+
+        <span class="text-zinc-600">·</span>
+
+        <button class="hover:text-red-400"
+                disabled="@_isBusy"
+                @onclick="DiscardAsync">
+            @(_isRestoring ? "Discarding…" : "Discard")
+        </button>
+    }
+
+    @if (!_hasRemote)
+    {
+        <span class="text-zinc-600">·</span>
+
+        @if (_showAddRemote)
         {
-            <span class="text-zinc-400 text-xs">Enable git tracking?</span>
-            <button class="px-2 py-0.5 text-xs rounded bg-emerald-600 hover:bg-emerald-500 text-white transition disabled:opacity-50"
-                    disabled="@_isInitializing"
-                    data-testid="git-init-confirm"
-                    @onclick="InitRepoAsync">
-                @(_isInitializing ? "..." : "Yes")
+            <input type="text"
+                   class="px-2 py-1 text-xs rounded bg-zinc-800 border border-zinc-700 text-zinc-200 w-56"
+                   placeholder="https://github.com/user/repo.git"
+                   @bind="_remoteUrl"
+                   @bind:event="oninput" />
+
+            <button class="hover:text-emerald-400"
+                    disabled="@(string.IsNullOrWhiteSpace(_remoteUrl))"
+                    @onclick="AddRemoteAsync">
+                Add
             </button>
-            <button class="px-2 py-0.5 text-xs rounded text-zinc-400 hover:text-white transition"
-                    data-testid="git-init-cancel"
-                    @onclick="() => _confirmInit = false">
-                No
+
+            <button class="hover:text-zinc-400"
+                    @onclick="CancelAddRemote">
+                Cancel
             </button>
         }
         else
         {
-            <button class="px-2 py-1 text-xs rounded text-zinc-500 hover:text-emerald-400 hover:bg-zinc-800 transition"
-                    data-testid="git-init-button"
-                    @onclick="() => _confirmInit = true">
-                Enable Git
+            <button class="text-zinc-400 hover:text-emerald-400"
+                    @onclick="() => _showAddRemote = true">
+                Add Remote
             </button>
         }
+    }
+    else
+    {
+        <span class="text-zinc-600">·</span>
 
-        @if (_errorMessage is not null)
-        {
-            <span class="text-red-400 text-xs" data-testid="git-error">@_errorMessage</span>
-        }
-    </div>
-}
-else
-{
-    <div class="relative flex items-center gap-2 text-sm" data-testid="git-status-indicator">
+        <button class="text-zinc-400 hover:text-white"
+                disabled="@(_isSyncing || _isFetching)"
+                @onclick="ToggleSyncAsync">
 
-        @if (!string.IsNullOrEmpty(_branch) && _hasRemote)
-        {
-            <button class="text-zinc-400 text-xs hover:text-emerald-400 transition"
-                    data-testid="git-branch"
-                    @onclick="ToggleHistoryAsync">
-                @_branch
-            </button>
-        }
-
-        @if (_status == GitRepoStatus.Clean && _hasRemote)
-        {
-            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"
-                  data-testid="git-status-dot-clean"
-                  title="All changes committed"></span>
-
-            <span class="text-zinc-500 text-xs" data-testid="git-status-text">
-                Saved
-            </span>
-        }
-        else if (_status == GitRepoStatus.Dirty && _hasRemote)
-        {
-            <span class="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse"
-                  data-testid="git-status-dot-dirty"
-                  title="Uncommitted changes"></span>
-
-            <div class="relative flex" data-testid="git-save-group">
-                <button class="px-2 py-1 text-xs rounded-l bg-emerald-600 hover:bg-emerald-500 text-white transition disabled:opacity-50"
-                        disabled="@(_isBusy || !_hasRemote)"
-                        data-testid="git-save-button"
-                        @onclick="CommitAsync">
-                    @(_isCommitting ? "Saving..." : "Save")
-                </button>
-
-                <button class="px-1.5 py-1 text-xs rounded-r bg-emerald-700 hover:bg-emerald-600 text-white transition border-l border-emerald-800 disabled:opacity-50"
-                        disabled="@(_isBusy || !_hasRemote)"
-                        data-testid="git-save-dropdown"
-                        @onclick="ToggleDropdown">
-                    &#9662;
-                </button>
-
-                @if (_showDropdown)
-                {
-                    <div class="absolute top-full right-0 mt-1 bg-zinc-800 border border-zinc-700 rounded shadow-lg z-50 min-w-[120px]"
-                         data-testid="git-dropdown-menu">
-
-                        <button class="w-full text-left px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700 hover:text-white transition"
-                                data-testid="git-diff-button"
-                                @onclick="OpenDiffAsync">
-                            Diff
-                        </button>
-
-                        @if (!_confirmDiscard)
-                        {
-                            <button class="w-full text-left px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-700 hover:text-red-400 transition"
-                                    data-testid="git-discard-button"
-                                    @onclick="() => _confirmDiscard = true">
-                                Discard
-                            </button>
-                        }
-                        else
-                        {
-                            <div class="px-3 py-2 flex items-center gap-2">
-                                <span class="text-red-400 text-xs">Sure?</span>
-
-                                <button class="px-2 py-0.5 text-xs rounded bg-red-600 hover:bg-red-500 text-white transition"
-                                        data-testid="git-discard-confirm"
-                                        @onclick="DiscardAsync">
-                                    Yes
-                                </button>
-
-                                <button class="px-2 py-0.5 text-xs rounded text-zinc-400 hover:text-white transition"
-                                        data-testid="git-discard-cancel"
-                                        @onclick="() => _confirmDiscard = false">
-                                    No
-                                </button>
-                            </div>
-                        }
-                    </div>
-                }
-            </div>
-        }
-
-        @if (!_hasRemote)
-        {
-            <div class="relative flex items-center gap-1" data-testid="git-remote-group">
-
-                @if (_showAddRemote)
-                {
-                    <input type="text"
-                           class="px-2 py-1 text-xs rounded bg-zinc-800 border border-zinc-700 text-zinc-200 placeholder-zinc-500 w-56 focus:outline-none focus:border-emerald-500"
-                           placeholder="https://github.com/user/repo.git"
-                           @bind="_remoteUrl"
-                           @bind:event="oninput"
-                           data-testid="git-remote-url" />
-
-                    <button class="px-2 py-0.5 text-xs rounded bg-emerald-600 hover:bg-emerald-500 text-white transition disabled:opacity-50"
-                            disabled="@(string.IsNullOrWhiteSpace(_remoteUrl))"
-                            data-testid="git-remote-save"
-                            @onclick="AddRemoteAsync">
-                        Add
-                    </button>
-
-                    <button class="px-2 py-0.5 text-xs rounded text-zinc-400 hover:text-white transition"
-                            data-testid="git-remote-cancel"
-                            @onclick="CancelAddRemote">
-                        &times;
-                    </button>
-                }
-                else
-                {
-                    <button class="px-2 py-1 text-xs rounded text-zinc-500 hover:text-emerald-400 hover:bg-zinc-800 transition"
-                            data-testid="git-add-remote-button"
-                            @onclick="() => _showAddRemote = true">
-                        Add Remote
-                    </button>
-                }
-
-                <span class="text-xs text-zinc-500">
-                    Connect a remote repository to enable saving and sync.
+            @if (_isFetching)
+            {
+                <span>Checking…</span>
+            }
+            else
+            {
+                <span>
+                    Sync
+                    @if (_syncStatus.Ahead > 0)
+                    {
+                        <span class="text-emerald-400"> ↑@_syncStatus.Ahead</span>
+                    }
+                    @if (_syncStatus.Behind > 0)
+                    {
+                        <span class="text-blue-400"> ↓@_syncStatus.Behind</span>
+                    }
                 </span>
-            </div>
-        }
-        else
+            }
+        </button>
+
+        @if (_syncStatus.Ahead > 0)
         {
-            <div class="relative flex" data-testid="git-sync-group">
+            <span class="text-zinc-600">·</span>
 
-                <button class="px-2 py-1 text-xs rounded text-zinc-400 hover:text-white hover:bg-zinc-700 transition disabled:opacity-50"
-                        disabled="@_isSyncing"
-                        data-testid="git-sync-button"
-                        @onclick="ToggleSyncAsync">
-
-                    @if (_isFetching)
-                    {
-                        <span>Checking...</span>
-                    }
-                    else if (_syncStatus.Ahead > 0 || _syncStatus.Behind > 0)
-                    {
-                        <span>
-                            Sync
-                            @if (_syncStatus.Ahead > 0) { <span class="text-emerald-400">↑@_syncStatus.Ahead</span> }
-                            @if (_syncStatus.Behind > 0) { <span class="text-blue-400">↓@_syncStatus.Behind</span> }
-                        </span>
-                    }
-                    else
-                    {
-                        <span>Sync</span>
-                    }
-                </button>
-
-                @if (_showSyncDropdown)
-                {
-                    <div class="absolute top-full right-0 mt-1 bg-zinc-800 border border-zinc-700 rounded shadow-lg z-50 min-w-[140px]"
-                         data-testid="git-sync-dropdown">
-
-                        <button class="w-full text-left px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700 hover:text-white transition disabled:opacity-50"
-                                disabled="@_isSyncing"
-                                data-testid="git-push-button"
-                                @onclick="PushAsync">
-                            @(_isPushing ? "Pushing..." : "Push")
-                        </button>
-
-                        <button class="w-full text-left px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700 hover:text-white transition disabled:opacity-50"
-                                disabled="@(_isSyncing || _syncStatus.Error is not null)"
-                                data-testid="git-pull-button"
-                                @onclick="PullAsync">
-                            @(_isPulling ? "Pulling..." : "Pull")
-                        </button>
-                    </div>
-                }
-            </div>
+            <button class="hover:text-emerald-400"
+                    disabled="@_isSyncing"
+                    @onclick="PushAsync">
+                @(_isPushing ? "Pushing…" : "Push")
+            </button>
         }
 
-        @if (_errorMessage is not null)
+        @if (_syncStatus.Behind > 0)
         {
-            <span class="text-red-400 text-xs">@_errorMessage</span>
+            <span class="text-zinc-600">·</span>
+
+            <button class="hover:text-blue-400"
+                    disabled="@_isSyncing"
+                    @onclick="PullAsync">
+                @(_isPulling ? "Pulling…" : "Pull")
+            </button>
         }
-    </div>
-}
+    }
+
+    @if (_errorMessage is not null)
+    {
+        <span class="text-red-400">@_errorMessage</span>
+    }
+</div>
 
 @code {
 
     private GitRepoStatus _status = GitRepoStatus.NotAvailable;
-    private string _branch = "";
+
     private bool _isCommitting;
     private bool _isRestoring;
-    private bool _confirmDiscard;
-    private bool _showDropdown;
     private bool _showAddRemote;
-    private bool _showSyncDropdown;
-    private bool _showHistory;
     private bool _hasRemote;
+
     private bool _isFetching;
     private bool _isPushing;
     private bool _isPulling;
-    private bool _isInitializing;
-    private bool _confirmInit;
 
     private string? _errorMessage;
     private string _remoteUrl = "";
-    private string _diffContent = "";
-    private string[] _changedFiles = [];
-    private GitLogEntry[] _logEntries = [];
 
     private PeriodicTimer? _timer;
     private CancellationTokenSource? _cts;
 
-    private GitSyncStatus _syncStatus = new(0,0,false);
+    private GitSyncStatus _syncStatus = new(0, 0, false);
 
     private bool _isBusy => _isCommitting || _isRestoring || _isSyncing;
     private bool _isSyncing => _isPushing || _isPulling || _isFetching;
 
     protected override async Task OnInitializedAsync()
     {
-        _status = GitRepo.GetStatus();
+        _status = await Task.Run(() => GitRepo.GetStatus());
 
         if (_status == GitRepoStatus.NotAvailable)
             return;
 
-        _branch = GitRepo.GetCurrentBranch();
-        _hasRemote = GitRepo.HasRemote();
+        _hasRemote = await Task.Run(() => GitRepo.HasRemote());
 
         _cts = new CancellationTokenSource();
         _timer = new PeriodicTimer(TimeSpan.FromSeconds(15));
 
         _ = PollStatusAsync(_cts.Token);
-
-        await Task.CompletedTask;
     }
 
     private async Task PollStatusAsync(CancellationToken ct)
@@ -284,7 +179,7 @@ else
                 if (_isBusy)
                     continue;
 
-                var newStatus = GitRepo.GetStatus();
+                var newStatus = await Task.Run(() => GitRepo.GetStatus(), ct);
 
                 if (newStatus != _status)
                 {
@@ -294,34 +189,6 @@ else
             }
         }
         catch (OperationCanceledException) {}
-    }
-
-    private async Task InitRepoAsync()
-    {
-        _errorMessage = null;
-        _isInitializing = true;
-
-        try
-        {
-            var error = await InitRepo.ExecuteAsync();
-            if (error != null)
-            {
-                _errorMessage = error;
-                return;
-            }
-
-            _status = GitRepo.GetStatus();
-            _branch = GitRepo.GetCurrentBranch();
-            _hasRemote = GitRepo.HasRemote();
-        }
-        catch (Exception ex)
-        {
-            _errorMessage = $"Init error: {ex.Message}";
-        }
-        finally
-        {
-            _isInitializing = false;
-        }
     }
 
     private void CancelAddRemote()
@@ -348,7 +215,7 @@ else
             _showAddRemote = false;
             _remoteUrl = "";
 
-            _syncStatus = GitRepo.FetchAndGetSyncStatus();
+            _syncStatus = await Task.Run(() => GitRepo.FetchAndGetSyncStatus());
 
             if (_syncStatus.Behind > 0)
                 await PullAsync();
@@ -361,12 +228,6 @@ else
 
     private async Task CommitAsync()
     {
-        if (!_hasRemote)
-        {
-            _errorMessage = "Add a remote repository before saving.";
-            return;
-        }
-
         _errorMessage = null;
         _isCommitting = true;
 
@@ -378,7 +239,9 @@ else
             if (error != null)
                 _errorMessage = error;
 
-            _status = GitRepo.GetStatus();
+            _status = await Task.Run(() => GitRepo.GetStatus());
+
+            await Resources.LoadAsync();
         }
         catch (Exception ex)
         {
@@ -390,40 +253,22 @@ else
         }
     }
 
-    private void ToggleDropdown()
+    private async Task ToggleSyncAsync()
     {
-        _showDropdown = !_showDropdown;
-        _showSyncDropdown = false;
-    }
+        _isFetching = true;
 
-    private void ToggleSyncAsync()
-    {
-        _showSyncDropdown = !_showSyncDropdown;
-        _showDropdown = false;
-
-        if (_showSyncDropdown)
+        try
         {
-            _isFetching = true;
-
-            try
-            {
-                _syncStatus = GitRepo.FetchAndGetSyncStatus();
-            }
-            finally
-            {
-                _isFetching = false;
-            }
+            _syncStatus = await Task.Run(() => GitRepo.FetchAndGetSyncStatus());
+        }
+        finally
+        {
+            _isFetching = false;
         }
     }
 
     private async Task PushAsync()
     {
-        if (!_hasRemote)
-        {
-            _errorMessage = "Add a remote first.";
-            return;
-        }
-
         _errorMessage = null;
         _isPushing = true;
 
@@ -434,7 +279,7 @@ else
             if (error != null)
                 _errorMessage = error;
 
-            _syncStatus = GitRepo.FetchAndGetSyncStatus();
+            _syncStatus = await Task.Run(() => GitRepo.FetchAndGetSyncStatus());
         }
         catch (Exception ex)
         {
@@ -458,8 +303,10 @@ else
             if (error != null)
                 _errorMessage = error;
 
-            _syncStatus = GitRepo.FetchAndGetSyncStatus();
-            _status = GitRepo.GetStatus();
+            _syncStatus = await Task.Run(() => GitRepo.FetchAndGetSyncStatus());
+            _status = await Task.Run(() => GitRepo.GetStatus());
+
+            await Resources.LoadAsync();
         }
         catch (Exception ex)
         {
@@ -471,34 +318,10 @@ else
         }
     }
 
-    public void Dispose()
-    {
-        _cts?.Cancel();
-        _cts?.Dispose();
-        _timer?.Dispose();
-    }
-    
-    private void OpenDiffAsync()
-    {
-        _showDropdown = false;
-
-        try
-        {
-            _changedFiles = GitRepo.GetChangedFiles();
-            _diffContent = GitRepo.GetDiff();
-        }
-        catch (Exception ex)
-        {
-            _errorMessage = $"Diff error: {ex.Message}";
-        }
-    }
-
     private async Task DiscardAsync()
     {
         _errorMessage = null;
         _isRestoring = true;
-        _confirmDiscard = false;
-        _showDropdown = false;
 
         try
         {
@@ -507,7 +330,9 @@ else
             if (error != null)
                 _errorMessage = error;
 
-            _status = GitRepo.GetStatus();
+            _status = await Task.Run(() => GitRepo.GetStatus());
+
+            await Resources.LoadAsync();
         }
         catch (Exception ex)
         {
@@ -519,22 +344,10 @@ else
         }
     }
 
-    private void ToggleHistoryAsync()
+    public void Dispose()
     {
-        if (_showHistory)
-        {
-            _showHistory = false;
-            return;
-        }
-
-        try
-        {
-            _logEntries = GitRepo.GetLog(20);
-            _showHistory = true;
-        }
-        catch (Exception ex)
-        {
-            _errorMessage = $"History error: {ex.Message}";
-        }
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _timer?.Dispose();
     }
 }
