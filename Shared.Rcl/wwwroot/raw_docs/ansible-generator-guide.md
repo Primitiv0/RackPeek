@@ -2,6 +2,8 @@
 
 RackPeek can generate production-ready Ansible inventory directly from your modeled infrastructure.
 
+---
+
 # 1. Making a Resource Ansible-Ready
 
 A resource becomes an Ansible host when it has an address label.
@@ -17,9 +19,27 @@ labels:
 
 Without this, the resource will not appear in inventory.
 
+RackPeek will also accept these alternatives if `ansible_host` is not provided:
+
+| Label      | Used As      |
+| ---------- | ------------ |
+| `ip`       | ansible_host |
+| `hostname` | ansible_host |
+
+Example:
+
+```yaml
+labels:
+  ip: 192.168.1.10
+```
+
 ---
 
-## Recommended Labels
+# 2. Standard Ansible Labels
+
+RackPeek automatically exports any label beginning with **`ansible_`** as an Ansible host variable.
+
+Example:
 
 ```yaml
 labels:
@@ -27,24 +47,67 @@ labels:
   ansible_user: ubuntu
   ansible_port: 22
   ansible_ssh_private_key_file: ~/.ssh/id_rsa
-  env: prod
-  role: web
 ```
 
 ### What these do
 
-| Label                        | Purpose           |
-|------------------------------|-------------------|
-| ansible_host                 | IP or DNS target  |
-| ansible_user                 | SSH user          |
-| ansible_port                 | SSH port          |
-| ansible_ssh_private_key_file | SSH key           |
-| env                          | Used for grouping |
-| role                         | Used for grouping |
+| Label                        | Purpose          |
+| ---------------------------- | ---------------- |
+| ansible_host                 | IP or DNS target |
+| ansible_user                 | SSH user         |
+| ansible_port                 | SSH port         |
+| ansible_ssh_private_key_file | SSH key          |
+
+These variables appear directly in the generated inventory.
 
 ---
 
-# 2. Using Tags for Grouping
+# 3. Custom Host Variables (`ansible_var_*`)
+
+RackPeek supports exposing **custom variables** to Ansible playbooks using the label prefix:
+
+```
+ansible_var_
+```
+
+The prefix is removed when generating inventory.
+
+### Example
+
+```yaml
+labels:
+  ansible_host: 10.0.0.10
+  ansible_var_mac: 52:54:00:11:22:33
+  ansible_var_rack: rack01
+```
+
+Generated inventory:
+
+```yaml
+cerberus-0:
+  ansible_host: 10.0.0.10
+  mac: 52:54:00:11:22:33
+  rack: rack01
+```
+
+This allows RackPeek to remain the **source of truth for infrastructure metadata** while making the data available to playbooks.
+
+### Example Playbook Usage
+
+```yaml
+- hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Copy ignition file
+      ansible.builtin.copy:
+        src: "output/{{ inventory_hostname }}.ign"
+        dest: "/srv/ignition/{{ mac }}.ign"
+```
+
+---
+
+# 4. Using Tags for Grouping
 
 Tags are simple grouping mechanisms.
 
@@ -75,7 +138,7 @@ vm-web01 ...
 
 ---
 
-# 3. Using Labels for Structured Groups
+# 5. Using Labels for Structured Groups
 
 Labels allow structured grouping.
 
@@ -107,7 +170,7 @@ This is cleaner and more scalable than raw tags.
 
 ---
 
-# 4. Example Resource
+# 6. Example Resource
 
 ```yaml
 - kind: System
@@ -116,19 +179,22 @@ This is cleaner and more scalable than raw tags.
   cores: 4
   ram: 8
   name: vm-web01
+
   tags:
   - prod
   - web
+
   labels:
     ansible_host: 192.168.1.10
     ansible_user: ubuntu
+    ansible_var_mac: 52:54:00:11:22:33
     env: prod
     role: web
 ```
 
 ---
 
-# 5. Generating Inventory
+# 7. Generating Inventory
 
 ## CLI
 
@@ -158,7 +224,7 @@ Click **Generate**.
 
 ---
 
-# 6. Example Generated Inventory
+# 8. Example Generated Inventory
 
 ```ini
 [all:vars]
@@ -166,18 +232,18 @@ ansible_python_interpreter=/usr/bin/python3
 ansible_user=ansible
 
 [env_prod]
-vm-web01 ansible_host=192.168.1.10 ansible_user=ubuntu
+vm-web01 ansible_host=192.168.1.10 ansible_user=ubuntu mac=52:54:00:11:22:33
 
 [role_web]
-vm-web01 ansible_host=192.168.1.10 ansible_user=ubuntu
+vm-web01 ansible_host=192.168.1.10 ansible_user=ubuntu mac=52:54:00:11:22:33
 
 [prod]
-vm-web01 ansible_host=192.168.1.10 ansible_user=ubuntu
+vm-web01 ansible_host=192.168.1.10 ansible_user=ubuntu mac=52:54:00:11:22:33
 ```
 
 ---
 
-# 7. Writing Playbooks Against RackPeek Inventory
+# 9. Writing Playbooks Against RackPeek Inventory
 
 ## Example 1 – Ping Production
 
@@ -239,7 +305,7 @@ ansible-playbook -i inventory.ini ping.yml
 
 ---
 
-# 8. Best Practices
+# 10. Best Practices
 
 ### 1. Use Labels for Structure
 
@@ -254,7 +320,22 @@ Over raw tags when designing larger infrastructure.
 
 ---
 
-### 2. Keep Global Vars Minimal
+### 2. Use `ansible_var_*` for Infrastructure Metadata
+
+Examples:
+
+```
+ansible_var_mac
+ansible_var_rack
+ansible_var_datacenter
+ansible_var_vlan
+```
+
+This allows playbooks to reference infrastructure information without duplicating configuration.
+
+---
+
+### 3. Keep Global Vars Minimal
 
 Use:
 
@@ -268,7 +349,7 @@ Override per host only when needed.
 
 ---
 
-### 3. Separate Infrastructure and Services
+### 4. Separate Infrastructure and Services
 
 Model:
 
@@ -279,7 +360,7 @@ Deploy against systems, not services.
 
 ---
 
-### 4. Keep Inventory Deterministic
+### 5. Keep Inventory Deterministic
 
 Avoid:
 
@@ -289,7 +370,7 @@ Avoid:
 
 ---
 
-# 9. Advanced Pattern (Recommended)
+# 11. Advanced Pattern (Recommended)
 
 Use both:
 
@@ -315,12 +396,13 @@ ansible-playbook site.yml -l env_prod:&role_web
 
 ---
 
-# 10. Summary
+# 12. Summary
 
 To use RackPeek effectively with Ansible:
 
 1. Add `ansible_host` label
 2. Add `env` and `role` labels
 3. Optionally add tags
-4. Generate inventory
-5. Write playbooks targeting groups
+4. Use `ansible_var_*` for custom host variables
+5. Generate inventory
+6. Write playbooks targeting groups
