@@ -1,4 +1,5 @@
 using RackPeek.Domain.Persistence;
+using Spectre.Console;
 
 namespace RackPeek.Domain.Resources.Desktops;
 
@@ -60,7 +61,7 @@ public class DesktopHardwareReportUseCase(IResourceCollection repository) : IUse
                 : string.Join(", ",
                     desktop.Gpus
                         .GroupBy(g => g.Model)
-                        .Select(g => $"{g.Count()}× {g.Key}"));
+                        .Select(g => $"{g.Count()}× {Markup.Escape(g.Key ?? "Unknown")}"));
 
             return new DesktopHardwareRow(
                 desktop.Name,
