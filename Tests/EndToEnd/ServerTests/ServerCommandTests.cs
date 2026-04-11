@@ -63,7 +63,7 @@ public class ServerCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputH
 
         (var output, var yaml) = await ExecuteAsync("servers", "rename", "srv01", "srv01-updated");
 
-        (_,  yaml) = await ExecuteAsync("systems", "get", "sys01");
+        (_, yaml) = await ExecuteAsync("systems", "get", "sys01");
 
         Assert.Contains("srv01-updated", yaml);
         Assert.DoesNotContain("srv01\n", yaml);
