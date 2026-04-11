@@ -192,6 +192,15 @@ public static class AnsibleInventoryGenerator {
             if (string.IsNullOrWhiteSpace(k) || string.IsNullOrWhiteSpace(v))
                 continue;
 
+            // Custom host variables via ansible_var_*
+            if (k.StartsWith("ansible_var_", StringComparison.OrdinalIgnoreCase)) {
+                var varName = k.Substring("ansible_var_".Length);
+                if (!string.IsNullOrWhiteSpace(varName))
+                    vars[varName] = v;
+                continue;
+            }
+
+            // Standard ansible_* variables
             if (k.StartsWith("ansible_", StringComparison.OrdinalIgnoreCase))
                 vars[k] = v;
         }
