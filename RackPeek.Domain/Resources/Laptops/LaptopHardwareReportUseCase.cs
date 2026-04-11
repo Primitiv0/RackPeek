@@ -1,5 +1,4 @@
 using RackPeek.Domain.Persistence;
-using Spectre.Console;
 
 namespace RackPeek.Domain.Resources.Laptops;
 
@@ -33,7 +32,7 @@ public class LaptopHardwareReportUseCase(IResourceCollection repository) : IUseC
                 : string.Join(", ",
                     laptop.Gpus
                         .GroupBy(g => g.Model)
-                        .Select(g => $"{g.Count()}× {Markup.Escape(g.Key ?? "Unknown")}"));
+                        .Select(g => $"{g.Count()}× {g.Key}"));
 
             return new LaptopHardwareRow(
                 laptop.Name,

@@ -1,6 +1,5 @@
 using RackPeek.Domain.Persistence;
 using RackPeek.Domain.Resources.SubResources;
-using Spectre.Console;
 
 namespace RackPeek.Domain.Resources.Servers;
 
@@ -78,7 +77,7 @@ public class ServerHardwareReportUseCase(IResourceCollection repository) : IUseC
                 : string.Join(", ",
                     server.Gpus
                         .GroupBy(g => g.Model)
-                        .Select(g => $"{g.Count()}× {Markup.Escape(g.Key ?? "Unknown")}"));
+                        .Select(g => $"{g.Count()}× {g.Key}"));
 
 
             return new ServerHardwareRow(

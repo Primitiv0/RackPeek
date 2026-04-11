@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.Servers;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -33,8 +34,8 @@ public class ServerGetCommand(
 
         foreach (ServerHardwareRow s in report.Servers)
             table.AddRow(
-                s.Name,
-                s.CpuSummary,
+                s.Name.EscapeMarkup(),
+                s.CpuSummary.EscapeMarkup(),
                 $"{s.TotalCores}/{s.TotalThreads}",
                 $"{s.RamGb} GB",
                 $"{s.TotalStorageGb} GB",

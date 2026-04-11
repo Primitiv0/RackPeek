@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RackPeek.Domain.Resources.Desktops;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -35,13 +36,13 @@ public class DesktopReportCommand(
 
         foreach (DesktopHardwareRow d in report.Desktops)
             table.AddRow(
-                d.Name,
-                d.CpuSummary,
+                d.Name.EscapeMarkup(),
+                d.CpuSummary.EscapeMarkup(),
                 $"{d.TotalCores}/{d.TotalThreads}",
                 $"{d.RamGb} GB",
                 $"{d.TotalStorageGb} GB (SSD {d.SsdStorageGb} / HDD {d.HddStorageGb})",
-                d.NicSummary,
-                d.GpuSummary
+                d.NicSummary.EscapeMarkup(),
+                d.GpuSummary.EscapeMarkup()
             );
 
         AnsiConsole.Write(table);

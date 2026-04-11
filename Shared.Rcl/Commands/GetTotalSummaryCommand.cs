@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.Hardware;
 using RackPeek.Domain.Resources.Services.UseCases;
 using RackPeek.Domain.Resources.SystemResources.UseCases;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -46,7 +47,7 @@ public class GetTotalSummaryCommand(IServiceProvider provider) : AsyncCommand {
             $"[bold]Hardware[/] ({hardwareSummary.TotalHardware})");
 
         foreach ((var kind, var count) in hardwareSummary.HardwareByKind.OrderByDescending(h => h.Value).ThenBy(h => h.Key))
-            hardwareNode.AddNode($"{kind}: {count}");
+            hardwareNode.AddNode($"{kind.EscapeMarkup()}: {count}");
 
         TreeNode systemsNode = tree.AddNode(
             $"[bold]Systems[/] ({systemSummary.TotalSystems})");
@@ -55,13 +56,13 @@ public class GetTotalSummaryCommand(IServiceProvider provider) : AsyncCommand {
             TreeNode typesNode = systemsNode.AddNode("[bold]Types[/]");
             foreach ((var type, var count) in systemSummary.SystemsByType.OrderByDescending(h => h.Value)
                          .ThenBy(h => h.Key))
-                typesNode.AddNode($"{type}: {count}");
+                typesNode.AddNode($"{type.EscapeMarkup()}: {count}");
         }
 
         if (systemSummary.SystemsByOs.Count > 0) {
             TreeNode osNode = systemsNode.AddNode("[bold]Operating Systems[/]");
             foreach ((var os, var count) in systemSummary.SystemsByOs.OrderByDescending(h => h.Value).ThenBy(h => h.Key))
-                osNode.AddNode($"{os}: {count}");
+                osNode.AddNode($"{os.EscapeMarkup()}: {count}");
         }
 
         TreeNode servicesNode = tree.AddNode(
@@ -105,10 +106,10 @@ public class GetTotalSummaryCommand(IServiceProvider provider) : AsyncCommand {
             .AddColumn("Count");
 
         foreach ((var type, var count) in systemSummary.SystemsByType)
-            table.AddRow("Type", type, count.ToString());
+            table.AddRow("Type", type.EscapeMarkup(), count.ToString());
 
         foreach ((var os, var count) in systemSummary.SystemsByOs)
-            table.AddRow("OS", os, count.ToString());
+            table.AddRow("OS", os.EscapeMarkup(), count.ToString());
 
         AnsiConsole.Write(table);
     }
@@ -124,7 +125,7 @@ public class GetTotalSummaryCommand(IServiceProvider provider) : AsyncCommand {
             .AddColumn("Count");
 
         foreach ((var kind, var count) in hardwareSummary.HardwareByKind)
-            table.AddRow(kind, count.ToString());
+            table.AddRow(kind.EscapeMarkup(), count.ToString());
 
         AnsiConsole.Write(table);
     }

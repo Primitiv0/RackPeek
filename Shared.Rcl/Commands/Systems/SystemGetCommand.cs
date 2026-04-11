@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.SystemResources.UseCases;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -33,13 +34,13 @@ public class SystemGetCommand(
 
         foreach (SystemReportRow s in report.Systems)
             table.AddRow(
-                s.Name,
-                s.Type ?? "Unknown",
-                s.Os ?? "Unknown",
+                s.Name.EscapeMarkup(),
+                (s.Type ?? "Unknown").EscapeMarkup(),
+                (s.Os ?? "Unknown").EscapeMarkup(),
                 s.Cores.ToString(),
                 s.RamGb.ToString(),
                 s.TotalStorageGb.ToString(),
-                string.Join(", ", s.RunsOn) ?? "Unkown"
+                (string.Join(", ", s.RunsOn) ?? "Unkown").EscapeMarkup()
             );
 
         AnsiConsole.Write(table);
