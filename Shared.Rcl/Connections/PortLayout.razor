@@ -12,8 +12,7 @@
 }
 else
 {
-    <div class="flex flex-wrap border border-zinc-800 w-fit">
-
+    <div class="flex flex-wrap border border-zinc-800 w-fit overflow-visible">
         @for (var i = 0; i < PortGroup.Count; i++)
         {
             var index = i;
@@ -43,13 +42,13 @@ else
 
                     <div class="@PortClass(true)">
 
-                        <div class="text-zinc-500">
+                    <div class="truncate">
+                        <span class="text-zinc-500">
                             @(index + 1)
-                        </div>
-
-                        <div class="truncate">
-                            @other!.Resource
-                        </div>
+                        </span>
+                        <span> - </span>
+                        <span>@other!.Resource</span>
+                    </div>
 
                         @if (otherGroup != null)
                         {
@@ -70,12 +69,16 @@ else
 
                     <div class="@PortClass(false)">
 
-                        <div class="text-zinc-500">
-                            @(index + 1)
-                        </div>
+       <div>
+    <span class="text-zinc-500">
+        @(index + 1)
+    </span>
+    <span> - </span>
+    <span class="text-zinc-700 italic">free</span>
+</div>
 
-                        <div class="text-zinc-700 italic">
-                            free
+                        <div class="text-[9px] leading-tight invisible">
+                            placeholder
                         </div>
 
                     </div>
@@ -113,15 +116,16 @@ else
     {
         return $@"
             w-28
-            h-12
+            min-h-12
+            py-1
             border-r
             border-b
             border-zinc-800
             text-[10px]
-            leading-tight
+            leading-snug
             flex
             flex-col
-            justify-center
+            justify-start
             px-1
             transition
             hover:bg-zinc-800

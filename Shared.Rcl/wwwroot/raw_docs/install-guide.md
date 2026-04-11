@@ -33,6 +33,11 @@ services:
     volumes:
       - rackpeek-config:/app/config
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8080 | grep -q 'rackpeek' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   rackpeek-config:

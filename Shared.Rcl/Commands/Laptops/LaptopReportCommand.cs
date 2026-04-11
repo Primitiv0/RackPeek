@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.Laptops;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -30,12 +31,12 @@ public class LaptopReportCommand(
 
         foreach (LaptopHardwareRow d in report.Laptops)
             table.AddRow(
-                d.Name,
-                d.CpuSummary,
+                d.Name.EscapeMarkup(),
+                d.CpuSummary.EscapeMarkup(),
                 $"{d.TotalCores}/{d.TotalThreads}",
                 $"{d.RamGb} GB",
                 $"{d.TotalStorageGb} GB (SSD {d.SsdStorageGb} / HDD {d.HddStorageGb})",
-                d.GpuSummary
+                d.GpuSummary.EscapeMarkup()
             );
 
         AnsiConsole.Write(table);

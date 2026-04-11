@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.Switches;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -31,13 +32,13 @@ public class SwitchReportCommand(
 
         foreach (SwitchHardwareRow s in report.Switches)
             table.AddRow(
-                s.Name,
-                s.Model,
+                s.Name.EscapeMarkup(),
+                s.Model.EscapeMarkup(),
                 s.Managed ? "[green]yes[/]" : "[red]no[/]",
                 s.Poe ? "[green]yes[/]" : "[red]no[/]",
                 s.TotalPorts.ToString(),
                 $"{s.MaxPortSpeedGb}G",
-                s.PortSummary
+                s.PortSummary.EscapeMarkup()
             );
 
         AnsiConsole.Write(table);

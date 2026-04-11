@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.Laptops;
 using RackPeek.Domain.UseCases;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -32,7 +33,7 @@ public class LaptopGetCommand(IServiceProvider provider)
 
         foreach (Laptop d in laptops)
             table.AddRow(
-                d.Name,
+                d.Name.EscapeMarkup(),
                 (d.Cpus?.Count ?? 0).ToString(),
                 d.Ram == null ? "None" : $"{d.Ram.Size}GB",
                 (d.Drives?.Count ?? 0).ToString(),

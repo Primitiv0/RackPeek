@@ -47,5 +47,16 @@ public class FirewallCommandTests(TempYamlCliFixture fs, ITestOutputHelper outpu
         Assert.Contains("Add a port", (await ExecuteAsync("firewalls", "port", "add", "--help")).Item1);
         Assert.Contains("Update a firewall port", (await ExecuteAsync("firewalls", "port", "set", "--help")).Item1);
         Assert.Contains("Remove a port", (await ExecuteAsync("firewalls", "port", "del", "--help")).Item1);
+        Assert.Contains("Rename a firewall", (await ExecuteAsync("firewalls", "rename", "--help")).Item1);
+    }
+
+    [Fact]
+    public async Task rename_successfully_updates_name() {
+        await ExecuteAsync("firewalls", "add", "fw01");
+
+        (var output, var yaml) = await ExecuteAsync("firewalls", "rename", "fw01", "fw01-new");
+
+        Assert.Equal("Firewall 'fw01' renamed to 'fw01-new'.\n", output);
+        Assert.Contains("name: fw01-new", yaml);
     }
 }

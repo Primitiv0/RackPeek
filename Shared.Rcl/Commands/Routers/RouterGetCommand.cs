@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.Routers;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -32,12 +33,12 @@ public class RouterGetCommand(
 
         foreach (RouterHardwareRow s in report.Routers)
             table.AddRow(
-                s.Name,
-                s.Model ?? "Unknown",
+                s.Name.EscapeMarkup(),
+                (s.Model ?? "Unknown").EscapeMarkup(),
                 s.Managed ? "[green]yes[/]" : "[red]no[/]",
                 s.Poe ? "[green]yes[/]" : "[red]no[/]",
                 s.TotalPorts.ToString(),
-                s.PortSummary
+                s.PortSummary.EscapeMarkup()
             );
 
         AnsiConsole.Write(table);

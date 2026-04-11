@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.UpsUnits;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -20,12 +21,12 @@ public class UpsDescribeCommand(IServiceProvider provider)
             .AddColumn()
             .AddColumn();
 
-        grid.AddRow("Name:", ups.Name);
-        grid.AddRow("Model:", ups.Model ?? "Unknown");
+        grid.AddRow("Name:", ups.Name.EscapeMarkup());
+        grid.AddRow("Model:", (ups.Model ?? "Unknown").EscapeMarkup());
         grid.AddRow("VA:", ups.Va?.ToString() ?? "Unknown");
 
         if (ups.Labels.Count > 0)
-            grid.AddRow("Labels:", string.Join(", ", ups.Labels.Select(kvp => $"{kvp.Key}: {kvp.Value}")));
+            grid.AddRow("Labels:", string.Join(", ", ups.Labels.Select(kvp => $"{kvp.Key.EscapeMarkup()}: {kvp.Value.EscapeMarkup()}")));
 
         AnsiConsole.Write(new Panel(grid).Header("UPS").Border(BoxBorder.Rounded));
 

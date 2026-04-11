@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.Services.UseCases;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -36,11 +37,11 @@ public class ServiceReportCommand(
             if (s.RunsOnPhysicalHost?.Count > 0) phys = string.Join(", ", s.RunsOnPhysicalHost);
 
             table.AddRow(
-                s.Name,
-                s.Ip ?? "",
-                s.Port.ToString() ?? "",
-                s.Protocol ?? "",
-                s.Url ?? "",
+                s.Name.EscapeMarkup(),
+                (s.Ip ?? "").EscapeMarkup(),
+                (s.Port.ToString() ?? "").EscapeMarkup(),
+                (s.Protocol ?? "").EscapeMarkup(),
+                (s.Url ?? "").EscapeMarkup(),
                 ServicesFormatExtensions.FormatRunsOn(sys, phys)
             );
         }

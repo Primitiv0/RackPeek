@@ -49,5 +49,16 @@ public class LaptopCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputH
 
         // GPU help
         Assert.Contains("Manage GPUs", (await ExecuteAsync("laptops", "gpu", "--help")).Item1);
+        Assert.Contains("Rename a Laptop", (await ExecuteAsync("laptops", "rename", "--help")).Item1);
+    }
+
+    [Fact]
+    public async Task rename_successfully_updates_name() {
+        await ExecuteAsync("laptops", "add", "lap01");
+
+        (var output, var yaml) = await ExecuteAsync("laptops", "rename", "lap01", "lap01-new");
+
+        Assert.Equal("Laptop 'lap01' renamed to 'lap01-new'.\n", output);
+        Assert.Contains("name: lap01-new", yaml);
     }
 }

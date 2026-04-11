@@ -95,8 +95,8 @@ public class AccessPointCardTests(
             var afterModel = await card.ModelSection(name).TextContentAsync();
             var afterSpeed = await card.SpeedSection(name).TextContentAsync();
 
-            Assert.Equal(beforeModel, afterModel);
-            Assert.Equal(beforeSpeed, afterSpeed);
+            await Assertions.Expect(card.ModelSection(name)).ToHaveTextAsync(beforeModel ?? "");
+            await Assertions.Expect(card.SpeedSection(name)).ToHaveTextAsync(beforeSpeed ?? "");
 
             await context.CloseAsync();
         }
