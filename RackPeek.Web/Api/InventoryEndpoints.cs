@@ -5,6 +5,8 @@ namespace RackPeek.Web.Api;
 
 public static class InventoryEndpoints {
     public static void MapInventoryApi(this WebApplication app) {
+        app.MapGet("/health", () => Results.Content("rackpeek", "text/plain"))
+            .DisableAntiforgery();
         app.MapPost("/api/inventory",
                 async (ImportYamlRequest request,
                     UpsertInventoryUseCase useCase) => {

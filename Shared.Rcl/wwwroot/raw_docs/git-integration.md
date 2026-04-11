@@ -41,4 +41,18 @@ docker run -d \
   aptacode/rackpeek:latest
 ```
 
+Or with health check:
+
+```bash
+docker run -d \
+  --name rackpeek \
+  -p 8080:8080 \
+  -v rackpeek-config:/app/config \
+  --health-cmd="curl -s http://localhost:8080 | grep -q 'rackpeek'" \
+  --health-interval=30s \
+  --health-timeout=10s \
+  --health-retries=3 \
+  aptacode/rackpeek:latest
+```
+
 Open RackPeek in the browser, enable Git when prompted, then add the repository remote URL. RackPeek will commit and sync configuration changes automatically.
