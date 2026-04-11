@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.UpsUnits;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -28,8 +29,8 @@ public class UpsGetCommand(IServiceProvider provider)
 
         foreach (UpsHardwareRow ups in report.UpsUnits)
             table.AddRow(
-                ups.Name,
-                ups.Model,
+                ups.Name.EscapeMarkup(),
+                ups.Model.EscapeMarkup(),
                 ups.Va.ToString()
             );
 

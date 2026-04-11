@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.Servers;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -31,15 +32,15 @@ public class ServerReportCommand(IServiceProvider serviceProvider)
 
         foreach (ServerHardwareRow s in report.Servers)
             table.AddRow(
-                s.Name,
-                s.CpuSummary,
+                s.Name.EscapeMarkup(),
+                s.CpuSummary.EscapeMarkup(),
                 $"{s.TotalCores}/{s.TotalThreads}",
                 $"{s.RamGb} GB",
                 $"{s.TotalStorageGb} GB (SSD {s.SsdStorageGb} / HDD {s.HddStorageGb})",
-                s.NicSummary,
+                s.NicSummary.EscapeMarkup(),
                 s.GpuCount == 0
                     ? "[grey]none[/]"
-                    : $"{s.GpuSummary} ({s.TotalGpuVramGb} GB VRAM)",
+                    : $"{s.GpuSummary.EscapeMarkup()} ({s.TotalGpuVramGb} GB VRAM)",
                 s.Ipmi ? "[green]yes[/]" : "[red]no[/]"
             );
 

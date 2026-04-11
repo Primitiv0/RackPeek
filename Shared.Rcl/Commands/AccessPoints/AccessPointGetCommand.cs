@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.AccessPoints;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -30,8 +31,8 @@ public class AccessPointGetCommand(
 
         foreach (AccessPointHardwareRow ap in report.AccessPoints)
             table.AddRow(
-                ap.Name,
-                ap.Model,
+                ap.Name.EscapeMarkup(),
+                ap.Model.EscapeMarkup(),
                 ap.SpeedGb.ToString()
             );
 

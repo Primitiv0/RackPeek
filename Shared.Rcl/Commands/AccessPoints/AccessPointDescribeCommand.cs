@@ -23,12 +23,12 @@ public class AccessPointDescribeCommand(
             .AddColumn(new GridColumn().NoWrap())
             .AddColumn(new GridColumn().NoWrap());
 
-        grid.AddRow("Name:", ap.Name);
-        grid.AddRow("Model:", ap.Model ?? "Unknown");
-        grid.AddRow("Speed (Gbps):", ap.Speed?.ToString() ?? "Unknown");
+        grid.AddRow("Name:", ap.Name.EscapeMarkup());
+        grid.AddRow("Model:", (ap.Model ?? "Unknown").EscapeMarkup());
+        grid.AddRow("Speed (Gbps):", (ap.Speed?.ToString() ?? "Unknown").EscapeMarkup());
 
         if (ap.Labels.Count > 0)
-            grid.AddRow("Labels:", string.Join(", ", ap.Labels.Select(kvp => $"{kvp.Key}: {kvp.Value}")));
+            grid.AddRow("Labels:", string.Join(", ", ap.Labels.Select(kvp => $"{kvp.Key.EscapeMarkup()}: {kvp.Value.EscapeMarkup()}")));
 
         AnsiConsole.Write(
             new Panel(grid)

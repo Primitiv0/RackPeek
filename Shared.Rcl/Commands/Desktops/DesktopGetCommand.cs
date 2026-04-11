@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.Desktops;
 using RackPeek.Domain.UseCases;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -34,8 +35,8 @@ public class DesktopGetCommand(IServiceProvider provider)
 
         foreach (Desktop d in desktops)
             table.AddRow(
-                d.Name,
-                d.Model ?? "Unknown",
+                d.Name.EscapeMarkup(),
+                (d.Model ?? "Unknown").EscapeMarkup(),
                 (d.Cpus?.Count ?? 0).ToString(),
                 d.Ram == null ? "None" : $"{d.Ram.Size}GB",
                 (d.Drives?.Count ?? 0).ToString(),
