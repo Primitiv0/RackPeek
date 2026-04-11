@@ -39,5 +39,16 @@ public class ServiceCommandTests(TempYamlCliFixture fs, ITestOutputHelper output
         Assert.Contains("Update properties", (await ExecuteAsync("services", "set", "--help")).output);
         Assert.Contains("Delete a service", (await ExecuteAsync("services", "del", "--help")).output);
         Assert.Contains("List subnets", (await ExecuteAsync("services", "subnets", "--help")).output);
+        Assert.Contains("Rename a service", (await ExecuteAsync("services", "rename", "--help")).output);
+    }
+
+    [Fact]
+    public async Task rename_successfully_updates_name() {
+        await ExecuteAsync("services", "add", "svc01");
+
+        (var output, var yaml) = await ExecuteAsync("services", "rename", "svc01", "svc01-new");
+
+        Assert.Equal("Service 'svc01' renamed to 'svc01-new'.\n", output);
+        Assert.Contains("name: svc01-new", yaml);
     }
 }
