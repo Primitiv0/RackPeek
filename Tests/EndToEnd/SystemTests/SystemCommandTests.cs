@@ -42,5 +42,16 @@ public class SystemCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputH
         Assert.Contains("Update properties", (await ExecuteAsync("systems", "set", "--help")).Item1);
         Assert.Contains("Delete a system", (await ExecuteAsync("systems", "del", "--help")).Item1);
         Assert.Contains("Display the dependency tree", (await ExecuteAsync("systems", "tree", "--help")).Item1);
+        Assert.Contains("Rename a system", (await ExecuteAsync("systems", "rename", "--help")).Item1);
+    }
+
+    [Fact]
+    public async Task rename_successfully_updates_name() {
+        await ExecuteAsync("systems", "add", "sys01");
+
+        (var output, var yaml) = await ExecuteAsync("systems", "rename", "sys01", "sys01-new");
+
+        Assert.Equal("System 'sys01' renamed to 'sys01-new'.\n", output);
+        Assert.Contains("name: sys01-new", yaml);
     }
 }

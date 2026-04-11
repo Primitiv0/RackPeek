@@ -46,5 +46,16 @@ public class RouterCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputH
         Assert.Contains("Add a port", (await ExecuteAsync("routers", "port", "add", "--help")).Item1);
         Assert.Contains("Update a router port", (await ExecuteAsync("routers", "port", "set", "--help")).Item1);
         Assert.Contains("Remove a port", (await ExecuteAsync("routers", "port", "del", "--help")).Item1);
+        Assert.Contains("Rename a router", (await ExecuteAsync("routers", "rename", "--help")).Item1);
+    }
+
+    [Fact]
+    public async Task rename_successfully_updates_name() {
+        await ExecuteAsync("routers", "add", "rt01");
+
+        (var output, var yaml) = await ExecuteAsync("routers", "rename", "rt01", "rt01-new");
+
+        Assert.Equal("Router 'rt01' renamed to 'rt01-new'.\n", output);
+        Assert.Contains("name: rt01-new", yaml);
     }
 }

@@ -53,5 +53,17 @@ public class UpsCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputHelp
 
         (var delHelp, var _) = await ExecuteAsync("ups", "del", "--help");
         Assert.Contains("Delete a UPS unit", delHelp);
+        (var renameHelp, var _) = await ExecuteAsync("ups", "rename", "--help");
+        Assert.Contains("Rename a UPS unit", renameHelp);
+    }
+
+    [Fact]
+    public async Task rename_successfully_updates_name() {
+        await ExecuteAsync("ups", "add", "ups01");
+
+        (var output, var yaml) = await ExecuteAsync("ups", "rename", "ups01", "ups01-new");
+
+        Assert.Equal("UPS 'ups01' renamed to 'ups01-new'.\n", output);
+        Assert.Contains("name: ups01-new", yaml);
     }
 }

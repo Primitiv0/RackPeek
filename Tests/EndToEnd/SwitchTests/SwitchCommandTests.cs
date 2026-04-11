@@ -46,5 +46,16 @@ public class SwitchCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputH
         Assert.Contains("Add a port", (await ExecuteAsync("switches", "port", "add", "--help")).Item1);
         Assert.Contains("Update a switch port", (await ExecuteAsync("switches", "port", "set", "--help")).Item1);
         Assert.Contains("Remove a port", (await ExecuteAsync("switches", "port", "del", "--help")).Item1);
+        Assert.Contains("Rename a switch", (await ExecuteAsync("switches", "rename", "--help")).Item1);
+    }
+
+    [Fact]
+    public async Task rename_successfully_updates_name() {
+        await ExecuteAsync("switches", "add", "sw01");
+
+        (var output, var yaml) = await ExecuteAsync("switches", "rename", "sw01", "sw01-new");
+
+        Assert.Equal("Switch 'sw01' renamed to 'sw01-new'.\n", output);
+        Assert.Contains("name: sw01-new", yaml);
     }
 }

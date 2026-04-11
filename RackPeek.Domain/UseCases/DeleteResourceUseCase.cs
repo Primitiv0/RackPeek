@@ -1,6 +1,7 @@
 using RackPeek.Domain.Helpers;
 using RackPeek.Domain.Persistence;
 using RackPeek.Domain.Resources;
+using RackPeek.Domain.Resources.Connections;
 
 namespace RackPeek.Domain.UseCases;
 
@@ -22,6 +23,13 @@ public class DeleteResourceUseCase<T>(IResourceCollection repo) : IDeleteResourc
         foreach (Resource resource in dependants) {
             resource.RunsOn.Remove(name);
             await repo.UpdateAsync(resource);
+        }
+
+        IReadOnlyList<Connection> connections = await repo.GetConnectionsAsync();
+        foreach (Connection connection in connections) {
+            if (connection.A.Resource == name || connection.B.Resource == name) {
+                await repo.RemoveConnectionAsync(connection);
+            }
         }
 
         await repo.DeleteAsync(name);

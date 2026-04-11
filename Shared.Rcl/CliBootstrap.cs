@@ -8,6 +8,7 @@ using RackPeek.Domain.Persistence.Yaml;
 using Shared.Rcl.Commands;
 using Shared.Rcl.Commands.AccessPoints;
 using Shared.Rcl.Commands.AccessPoints.Labels;
+using Shared.Rcl.Commands.AccessPoints.Rename;
 using Shared.Rcl.Commands.Connections;
 using Shared.Rcl.Commands.Desktops;
 using Shared.Rcl.Commands.Desktops.Cpus;
@@ -15,33 +16,42 @@ using Shared.Rcl.Commands.Desktops.Drive;
 using Shared.Rcl.Commands.Desktops.Gpus;
 using Shared.Rcl.Commands.Desktops.Labels;
 using Shared.Rcl.Commands.Desktops.Nics;
+using Shared.Rcl.Commands.Desktops.Rename;
 using Shared.Rcl.Commands.Exporters;
 using Shared.Rcl.Commands.Firewalls;
 using Shared.Rcl.Commands.Firewalls.Labels;
 using Shared.Rcl.Commands.Firewalls.Ports;
+using Shared.Rcl.Commands.Firewalls.Rename;
 using Shared.Rcl.Commands.Laptops;
 using Shared.Rcl.Commands.Laptops.Cpus;
 using Shared.Rcl.Commands.Laptops.Drive;
 using Shared.Rcl.Commands.Laptops.Gpus;
 using Shared.Rcl.Commands.Laptops.Labels;
+using Shared.Rcl.Commands.Laptops.Rename;
 using Shared.Rcl.Commands.Routers;
 using Shared.Rcl.Commands.Routers.Labels;
 using Shared.Rcl.Commands.Routers.Ports;
+using Shared.Rcl.Commands.Routers.Rename;
 using Shared.Rcl.Commands.Servers;
 using Shared.Rcl.Commands.Servers.Cpus;
 using Shared.Rcl.Commands.Servers.Drives;
 using Shared.Rcl.Commands.Servers.Gpus;
 using Shared.Rcl.Commands.Servers.Labels;
 using Shared.Rcl.Commands.Servers.Nics;
+using Shared.Rcl.Commands.Servers.Rename;
 using Shared.Rcl.Commands.Services;
 using Shared.Rcl.Commands.Services.Labels;
+using Shared.Rcl.Commands.Services.Rename;
 using Shared.Rcl.Commands.Switches;
 using Shared.Rcl.Commands.Switches.Labels;
 using Shared.Rcl.Commands.Switches.Ports;
+using Shared.Rcl.Commands.Switches.Rename;
 using Shared.Rcl.Commands.Systems;
 using Shared.Rcl.Commands.Systems.Labels;
+using Shared.Rcl.Commands.Systems.Rename;
 using Shared.Rcl.Commands.Ups;
 using Shared.Rcl.Commands.Ups.Labels;
+using Shared.Rcl.Commands.Ups.Rename;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -134,6 +144,9 @@ public static class CliBootstrap {
 
                 server.AddCommand<ServerDeleteCommand>("del").WithDescription("Delete a server from the inventory.");
 
+                server.AddCommand<ServerRenameCommand>("rename")
+                    .WithDescription("Rename a server to a new name.");
+
                 server.AddCommand<ServerTreeCommand>("tree")
                     .WithDescription("Display the dependency tree of a server.");
 
@@ -216,6 +229,10 @@ public static class CliBootstrap {
                 switches.AddCommand<SwitchSetCommand>("set").WithDescription("Update properties of a switch.");
 
                 switches.AddCommand<SwitchDeleteCommand>("del").WithDescription("Delete a switch from the inventory.");
+
+                switches.AddCommand<SwitchRenameCommand>("rename")
+                    .WithDescription("Rename a switch to a new name.");
+
                 switches.AddBranch("port", port => {
                     port.SetDescription("Manage ports on a network switch.");
 
@@ -257,6 +274,10 @@ public static class CliBootstrap {
                 routers.AddCommand<RouterSetCommand>("set").WithDescription("Update properties of a router.");
 
                 routers.AddCommand<RouterDeleteCommand>("del").WithDescription("Delete a router from the inventory.");
+
+                routers.AddCommand<RouterRenameCommand>("rename")
+                    .WithDescription("Rename a router to a new name.");
+
                 routers.AddBranch("port", port => {
                     port.SetDescription("Manage ports on a router.");
 
@@ -298,6 +319,10 @@ public static class CliBootstrap {
 
                 firewalls.AddCommand<FirewallDeleteCommand>("del")
                     .WithDescription("Delete a firewall from the inventory.");
+
+                firewalls.AddCommand<FirewallRenameCommand>("rename")
+                    .WithDescription("Rename a firewall to a new name.");
+
                 firewalls.AddBranch("port", port => {
                     port.SetDescription("Manage ports on a firewall.");
 
@@ -338,6 +363,9 @@ public static class CliBootstrap {
 
                 system.AddCommand<SystemDeleteCommand>("del").WithDescription("Delete a system from the inventory.");
 
+                system.AddCommand<SystemRenameCommand>("rename")
+                    .WithDescription("Rename a system to a new name.");
+
                 system.AddCommand<SystemTreeCommand>("tree")
                     .WithDescription("Display the dependency tree for a system.");
 
@@ -371,6 +399,9 @@ public static class CliBootstrap {
 
                 ap.AddCommand<AccessPointDeleteCommand>("del").WithDescription("Delete an access point.");
 
+                ap.AddCommand<AccessPointRenameCommand>("rename")
+                    .WithDescription("Rename an access point to a new name.");
+
                 ap.AddBranch("label", label => {
                     label.SetDescription("Manage labels on an access point.");
                     label.AddCommand<AccessPointLabelAddCommand>("add")
@@ -402,6 +433,9 @@ public static class CliBootstrap {
 
                 ups.AddCommand<UpsDeleteCommand>("del").WithDescription("Delete a UPS unit.");
 
+                ups.AddCommand<UpsRenameCommand>("rename")
+                    .WithDescription("Rename a UPS unit to a new name.");
+
                 ups.AddBranch("label", label => {
                     label.SetDescription("Manage labels on a UPS unit.");
                     label.AddCommand<UpsLabelAddCommand>("add").WithDescription("Add a label to a UPS unit.");
@@ -425,6 +459,10 @@ public static class CliBootstrap {
                 desktops.AddCommand<DesktopSetCommand>("set").WithDescription("Update properties of a desktop.");
                 desktops.AddCommand<DesktopDeleteCommand>("del")
                     .WithDescription("Delete a desktop from the inventory.");
+
+                desktops.AddCommand<DesktopRenameCommand>("rename")
+                    .WithDescription("Rename a desktop to a new name.");
+
                 desktops.AddCommand<DesktopReportCommand>("summary")
                     .WithDescription("Show a summarized hardware report for all desktops.");
                 desktops.AddCommand<DesktopTreeCommand>("tree")
@@ -485,6 +523,10 @@ public static class CliBootstrap {
                     .WithDescription("Show detailed information about a Laptop.");
                 laptops.AddCommand<LaptopSetCommand>("set").WithDescription("Update properties of a laptop.");
                 laptops.AddCommand<LaptopDeleteCommand>("del").WithDescription("Delete a Laptop from the inventory.");
+
+                laptops.AddCommand<LaptopRenameCommand>("rename")
+                    .WithDescription("Rename a Laptop to a new name.");
+
                 laptops.AddCommand<LaptopReportCommand>("summary")
                     .WithDescription("Show a summarized hardware report for all Laptops.");
                 laptops.AddCommand<LaptopTreeCommand>("tree")
@@ -543,6 +585,9 @@ public static class CliBootstrap {
                 service.AddCommand<ServiceSetCommand>("set").WithDescription("Update properties of a service.");
 
                 service.AddCommand<ServiceDeleteCommand>("del").WithDescription("Delete a service.");
+
+                service.AddCommand<ServiceRenameCommand>("rename")
+                    .WithDescription("Rename a service to a new name.");
 
                 service.AddCommand<ServiceSubnetsCommand>("subnets")
                     .WithDescription("List subnets associated with a service, optionally filtered by CIDR.");
