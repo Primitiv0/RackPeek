@@ -92,8 +92,15 @@
             {
                 <input type="number"
                        data-testid="ups-capacity-input"
-                       class="w-full px-3 py-2 rounded-md bg-zinc-800 text-zinc-100 border border-zinc-600"
-                       @bind="_edit.Va"/>
+            class="w-full px-3 py-2 rounded-md
+                            bg-zinc-800 text-zinc-100
+                            border border-zinc-600
+                            placeholder-zinc-500
+                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                            hover:border-zinc-400
+                            transition-colors duration-150
+                            cursor-text"
+                                                   @bind="_edit.Va"/>
             }
             else if (Ups.Va is not null)
             {
