@@ -15,7 +15,7 @@ public class FirewallPortUpdateSettings : FirewallNameSettings {
 
 public class FirewallPortUpdateCommand(IServiceProvider sp)
     : AsyncCommand<FirewallPortUpdateSettings> {
-    public override async Task<int> ExecuteAsync(CommandContext ctx, FirewallPortUpdateSettings s, CancellationToken ct) {
+    protected override async Task<int> ExecuteAsync(CommandContext ctx, FirewallPortUpdateSettings s, CancellationToken ct) {
         using IServiceScope scope = sp.CreateScope();
         IUpdatePortUseCase<Firewall> useCase = scope.ServiceProvider.GetRequiredService<IUpdatePortUseCase<Firewall>>();
 

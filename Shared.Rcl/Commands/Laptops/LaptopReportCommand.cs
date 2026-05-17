@@ -9,7 +9,7 @@ namespace Shared.Rcl.Commands.Laptops;
 public class LaptopReportCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand {
-    public override async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken) {
+    protected override async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken) {
         using IServiceScope scope = serviceProvider.CreateScope();
         LaptopHardwareReportUseCase useCase = scope.ServiceProvider.GetRequiredService<LaptopHardwareReportUseCase>();
 

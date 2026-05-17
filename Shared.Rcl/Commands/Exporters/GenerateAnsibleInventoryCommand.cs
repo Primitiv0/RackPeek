@@ -31,7 +31,7 @@ public sealed class GenerateAnsibleInventorySettings : CommandSettings {
 
 public sealed class GenerateAnsibleInventoryCommand(IServiceProvider provider)
     : AsyncCommand<GenerateAnsibleInventorySettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         GenerateAnsibleInventorySettings settings,
         CancellationToken cancellationToken) {

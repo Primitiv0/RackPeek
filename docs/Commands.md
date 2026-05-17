@@ -1845,7 +1845,7 @@ COMMANDS:
     summary            Show a summarized hardware report for all Laptops
     tree <name>        Display the dependency tree for a Laptop         
     cpu                Manage CPUs attached to Laptops                  
-    drives             Manage storage drives attached to Laptops        
+    drive              Manage storage drives attached to Laptops        
     gpu                Manage GPUs attached to Laptops                  
 ```
 
@@ -2018,13 +2018,13 @@ OPTIONS:
     -h, --help    Prints help information
 ```
 
-## `rpk laptops drives`
+## `rpk laptops drive`
 ```
 DESCRIPTION:
 Manage storage drives attached to Laptops
 
 USAGE:
-    rpk laptops drives [OPTIONS] <COMMAND>
+    rpk laptops drive [OPTIONS] <COMMAND>
 
 OPTIONS:
     -h, --help    Prints help information
@@ -2035,13 +2035,13 @@ COMMANDS:
     del <Laptop> <index>    Remove a drive from a Laptop
 ```
 
-## `rpk laptops drives add`
+## `rpk laptops drive add`
 ```
 DESCRIPTION:
 Add a drive to a Laptop
 
 USAGE:
-    rpk laptops drives add <laptop> [OPTIONS]
+    rpk laptops drive add <laptop> [OPTIONS]
 
 ARGUMENTS:
     <laptop>    The name of the Laptop
@@ -2052,13 +2052,13 @@ OPTIONS:
         --size    The drive capacity in GB:   
 ```
 
-## `rpk laptops drives set`
+## `rpk laptops drive set`
 ```
 DESCRIPTION:
 Update a Laptop drive
 
 USAGE:
-    rpk laptops drives set <Laptop> <index> [OPTIONS]
+    rpk laptops drive set <Laptop> <index> [OPTIONS]
 
 ARGUMENTS:
     <Laptop>    The Laptop name          
@@ -2070,13 +2070,13 @@ OPTIONS:
         --size    The drive capacity in Gb    
 ```
 
-## `rpk laptops drives del`
+## `rpk laptops drive del`
 ```
 DESCRIPTION:
 Remove a drive from a Laptop
 
 USAGE:
-    rpk laptops drives del <Laptop> <index> [OPTIONS]
+    rpk laptops drive del <Laptop> <index> [OPTIONS]
 
 ARGUMENTS:
     <Laptop>    The name of the Laptop          

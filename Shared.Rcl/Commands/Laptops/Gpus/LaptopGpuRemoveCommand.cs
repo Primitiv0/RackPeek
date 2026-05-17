@@ -8,7 +8,7 @@ namespace Shared.Rcl.Commands.Laptops.Gpus;
 
 public class LaptopGpuRemoveCommand(IServiceProvider provider)
     : AsyncCommand<LaptopGpuRemoveSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         LaptopGpuRemoveSettings settings,
         CancellationToken cancellationToken) {

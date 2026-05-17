@@ -391,7 +391,7 @@ public class CliCommandsWorkflowTests(TempYamlCliFixture fs, ITestOutputHelper o
         Assert.Contains("added", output);
 
         (output, _) = await ExecuteAsync(
-            "laptops", "drives", "add", "ltp-dev-01",
+            "laptops", "drive", "add", "ltp-dev-01",
             "--type", "ssd",
             "--size", "1024"
         );

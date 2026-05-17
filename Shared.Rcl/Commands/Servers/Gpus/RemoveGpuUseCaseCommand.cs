@@ -12,7 +12,7 @@ public class ServerGpuRemoveSettings : ServerNameSettings {
 
 public class ServerGpuRemoveCommand(IServiceProvider serviceProvider)
     : AsyncCommand<ServerGpuRemoveSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ServerGpuRemoveSettings settings,
         CancellationToken cancellationToken) {

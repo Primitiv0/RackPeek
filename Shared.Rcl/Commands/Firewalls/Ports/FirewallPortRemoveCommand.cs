@@ -12,7 +12,7 @@ public class FirewallPortRemoveSettings : FirewallNameSettings {
 
 public class FirewallPortRemoveCommand(IServiceProvider sp)
     : AsyncCommand<FirewallPortRemoveSettings> {
-    public override async Task<int> ExecuteAsync(CommandContext ctx, FirewallPortRemoveSettings s, CancellationToken ct) {
+    protected override async Task<int> ExecuteAsync(CommandContext ctx, FirewallPortRemoveSettings s, CancellationToken ct) {
         using IServiceScope scope = sp.CreateScope();
         IRemovePortUseCase<Firewall> useCase = scope.ServiceProvider.GetRequiredService<IRemovePortUseCase<Firewall>>();
 

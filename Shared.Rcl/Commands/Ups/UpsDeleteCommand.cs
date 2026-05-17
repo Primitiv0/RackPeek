@@ -11,7 +11,7 @@ public class UpsNameSettings : CommandSettings {
 
 public class UpsDeleteCommand(IServiceProvider provider)
     : AsyncCommand<UpsNameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         UpsNameSettings settings,
         CancellationToken cancellationToken) {

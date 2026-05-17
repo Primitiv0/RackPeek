@@ -15,7 +15,7 @@ public class UpsRenameSettings : UpsNameSettings {
 public class UpsRenameCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<UpsRenameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         UpsRenameSettings settings,
         CancellationToken cancellationToken) {

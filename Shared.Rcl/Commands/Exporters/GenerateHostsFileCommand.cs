@@ -7,7 +7,7 @@ namespace Shared.Rcl.Commands.Exporters;
 
 public sealed class GenerateHostsFileCommand(IServiceProvider provider)
     : AsyncCommand<GenerateHostsFileSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         GenerateHostsFileSettings settings,
         CancellationToken cancellationToken) {

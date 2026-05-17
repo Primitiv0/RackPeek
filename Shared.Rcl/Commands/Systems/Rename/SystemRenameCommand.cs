@@ -14,7 +14,7 @@ public class SystemRenameSettings : SystemNameSettings {
 public class SystemRenameCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<SystemRenameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         SystemRenameSettings settings,
         CancellationToken cancellationToken) {

@@ -14,7 +14,7 @@ public class ServiceRenameSettings : ServiceNameSettings {
 public class ServiceRenameCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<ServiceRenameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ServiceRenameSettings settings,
         CancellationToken cancellationToken) {

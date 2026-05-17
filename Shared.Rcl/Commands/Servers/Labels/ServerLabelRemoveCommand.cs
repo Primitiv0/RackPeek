@@ -12,7 +12,7 @@ public class ServerLabelRemoveSettings : ServerNameSettings {
 
 public class ServerLabelRemoveCommand(IServiceProvider serviceProvider)
     : AsyncCommand<ServerLabelRemoveSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ServerLabelRemoveSettings settings,
         CancellationToken cancellationToken) {

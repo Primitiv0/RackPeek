@@ -6,7 +6,7 @@ using Spectre.Console.Cli;
 namespace Shared.Rcl.Commands.Servers;
 
 public sealed class ServerTreeCommand(GetHardwareSystemTreeUseCase useCase) : AsyncCommand<ServerNameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ServerNameSettings settings,
         CancellationToken cancellationToken) {

@@ -14,7 +14,7 @@ public class ServerLabelAddSettings : ServerNameSettings {
 
 public class ServerLabelAddCommand(IServiceProvider serviceProvider)
     : AsyncCommand<ServerLabelAddSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ServerLabelAddSettings settings,
         CancellationToken cancellationToken) {

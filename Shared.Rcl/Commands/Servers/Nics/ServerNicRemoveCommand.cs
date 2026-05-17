@@ -12,7 +12,7 @@ public class ServerNicRemoveSettings : ServerNameSettings {
 
 public class ServerNicRemoveCommand(IServiceProvider serviceProvider)
     : AsyncCommand<ServerNicRemoveSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ServerNicRemoveSettings settings,
         CancellationToken cancellationToken) {

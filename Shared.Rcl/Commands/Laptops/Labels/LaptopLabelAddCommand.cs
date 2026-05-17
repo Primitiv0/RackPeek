@@ -12,7 +12,7 @@ public class LaptopLabelAddSettings : LaptopNameSettings {
 }
 
 public class LaptopLabelAddCommand(IServiceProvider serviceProvider) : AsyncCommand<LaptopLabelAddSettings> {
-    public override async Task<int> ExecuteAsync(CommandContext context, LaptopLabelAddSettings settings,
+    protected override async Task<int> ExecuteAsync(CommandContext context, LaptopLabelAddSettings settings,
         CancellationToken cancellationToken) {
         using IServiceScope scope = serviceProvider.CreateScope();
         IAddLabelUseCase<Laptop> useCase = scope.ServiceProvider.GetRequiredService<IAddLabelUseCase<Laptop>>();

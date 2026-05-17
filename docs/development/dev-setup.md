@@ -99,7 +99,50 @@ dotnet --version
 
 ### MacOS
 
-🏗️ Help wanted for guide on MacOS development environment setup.
+Setup tested on macOS (Apple Silicon and Intel). All dependencies install via Homebrew.
+
+#### Install .NET 10 SDK
+
+```shell
+brew install --cask dotnet-sdk
+```
+
+Verify:
+
+```shell
+dotnet --version
+```
+
+If `dotnet --version` reports a version below `10.0.x`, install the SDK explicitly:
+
+```shell
+brew install --cask dotnet-sdk@10
+```
+
+#### Install Docker Desktop
+
+Needed for running the Web UI locally (`just run-docker`) and for the E2E test suite (which builds the `rackpeek:ci` image via Testcontainers):
+
+```shell
+brew install --cask docker
+open -a Docker        # start the daemon; wait until the whale icon settles
+```
+
+Verify:
+
+```shell
+docker info
+```
+
+#### (Optional) Playwright browsers for E2E
+
+The first time you run E2E tests:
+
+```shell
+just e2e-setup
+```
+
+This installs the `Microsoft.Playwright.CLI` global tool and downloads the Chromium build pinned to the current Playwright NuGet version. **Re-run it whenever the `Microsoft.Playwright` package is bumped** — each Playwright version pins a specific Chromium build and stale caches cause every test to fail with `PlaywrightException : Executable doesn't exist at .../chromium_headless_shell-NNNN`.
 
 ### Windows
 

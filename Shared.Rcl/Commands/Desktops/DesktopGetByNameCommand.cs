@@ -8,7 +8,7 @@ namespace Shared.Rcl.Commands.Desktops;
 
 public class DesktopGetByNameCommand(IServiceProvider provider)
     : AsyncCommand<DesktopNameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         DesktopNameSettings settings,
         CancellationToken cancellationToken) {

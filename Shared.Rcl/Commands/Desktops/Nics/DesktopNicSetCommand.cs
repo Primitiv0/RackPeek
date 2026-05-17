@@ -31,7 +31,7 @@ public class DesktopNicSetSettings : CommandSettings {
 
 public class DesktopNicSetCommand(IServiceProvider provider)
     : AsyncCommand<DesktopNicSetSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         DesktopNicSetSettings settings,
         CancellationToken cancellationToken) {

@@ -32,7 +32,7 @@ public class ServiceSetSettings : ServerNameSettings {
 public class ServiceSetCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<ServiceSetSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ServiceSetSettings settings,
         CancellationToken cancellationToken) {

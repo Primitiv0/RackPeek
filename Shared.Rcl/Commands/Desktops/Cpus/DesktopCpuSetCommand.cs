@@ -30,7 +30,7 @@ public class DesktopCpuSetSettings : CommandSettings {
 }
 
 public class DesktopCpuSetCommand(IServiceProvider provider) : AsyncCommand<DesktopCpuSetSettings> {
-    public override async Task<int> ExecuteAsync(CommandContext context, DesktopCpuSetSettings settings,
+    protected override async Task<int> ExecuteAsync(CommandContext context, DesktopCpuSetSettings settings,
         CancellationToken cancellationToken) {
         using IServiceScope scope = provider.CreateScope();
         IUpdateCpuUseCase<Desktop> useCase = scope.ServiceProvider.GetRequiredService<IUpdateCpuUseCase<Desktop>>();

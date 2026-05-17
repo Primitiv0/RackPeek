@@ -13,7 +13,7 @@ public class SystemAddSettings : CommandSettings {
 public class SystemAddCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<SystemAddSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         SystemAddSettings settings,
         CancellationToken cancellationToken) {

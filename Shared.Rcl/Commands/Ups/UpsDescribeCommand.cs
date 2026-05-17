@@ -8,7 +8,7 @@ namespace Shared.Rcl.Commands.Ups;
 
 public class UpsDescribeCommand(IServiceProvider provider)
     : AsyncCommand<UpsNameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         UpsNameSettings settings,
         CancellationToken cancellationToken) {

@@ -11,7 +11,7 @@ public class ServiceLabelRemoveSettings : ServiceNameSettings {
 }
 
 public class ServiceLabelRemoveCommand(IServiceProvider serviceProvider) : AsyncCommand<ServiceLabelRemoveSettings> {
-    public override async Task<int> ExecuteAsync(CommandContext context, ServiceLabelRemoveSettings settings,
+    protected override async Task<int> ExecuteAsync(CommandContext context, ServiceLabelRemoveSettings settings,
         CancellationToken cancellationToken) {
         using IServiceScope scope = serviceProvider.CreateScope();
         IRemoveLabelUseCase<Service> useCase = scope.ServiceProvider.GetRequiredService<IRemoveLabelUseCase<Service>>();
