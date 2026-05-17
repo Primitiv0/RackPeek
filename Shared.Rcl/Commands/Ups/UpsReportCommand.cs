@@ -8,7 +8,7 @@ namespace Shared.Rcl.Commands.Ups;
 public class UpsReportCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand {
-    public override async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken) {
+    protected override async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken) {
         using IServiceScope scope = serviceProvider.CreateScope();
         UpsHardwareReportUseCase useCase = scope.ServiceProvider.GetRequiredService<UpsHardwareReportUseCase>();
 

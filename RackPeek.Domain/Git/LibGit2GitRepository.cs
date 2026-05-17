@@ -7,7 +7,12 @@ public interface IGitCredentialsProvider {
     CredentialsHandler GetHandler();
 }
 
-public sealed class GitHubTokenCredentialsProvider(string username, string token) : IGitCredentialsProvider {
+/// <summary>
+/// HTTP Basic auth using a personal access token as the password. Works with
+/// any forge that accepts a token over HTTPS — GitHub, Gitea, GitLab, Bitbucket,
+/// Forgejo, etc.
+/// </summary>
+public sealed class TokenCredentialsProvider(string username, string token) : IGitCredentialsProvider {
     private readonly string _username = username ?? throw new ArgumentNullException(nameof(username));
     private readonly string _token = token ?? throw new ArgumentNullException(nameof(token));
 
@@ -19,22 +24,47 @@ public sealed class GitHubTokenCredentialsProvider(string username, string token
     }
 }
 
-public sealed class LibGit2GitRepository(
-    string configDirectory,
-    IGitCredentialsProvider credentialsProvider) : IGitRepository {
-    private readonly CredentialsHandler _credentials = credentialsProvider.GetHandler();
+public sealed class LibGit2GitRepository : IGitRepository {
+    private readonly string _configDirectory;
+    private readonly CredentialsHandler _credentials;
+    private readonly CertificateCheckHandler? _certificateCheck;
 
-    private bool _isAvailable = Repository.IsValid(configDirectory);
+    public LibGit2GitRepository(
+        string configDirectory,
+        IGitCredentialsProvider credentialsProvider,
+        bool insecureTls = false) {
+        _configDirectory = configDirectory;
+        _credentials = credentialsProvider.GetHandler();
+        _isAvailable = Repository.IsValid(configDirectory);
+        // When insecureTls is true, accept any TLS certificate. Required for
+        // self-hosted forges (Gitea, GitLab) behind a private CA or self-signed
+        // cert. Public hosts already ship trusted certs; leave it off for them.
+        _certificateCheck = insecureTls
+            ? (_, _, _) => true
+            : null;
+    }
+
+    private FetchOptions BuildFetchOptions() => new() {
+        CredentialsProvider = _credentials,
+        CertificateCheck = _certificateCheck
+    };
+
+    private PushOptions BuildPushOptions() => new() {
+        CredentialsProvider = _credentials,
+        CertificateCheck = _certificateCheck
+    };
+
+    private bool _isAvailable;
 
     public bool IsAvailable => _isAvailable;
 
     public void Init() {
-        Repository.Init(configDirectory);
+        Repository.Init(_configDirectory);
 
         _isAvailable = true;
     }
 
-    private Repository OpenRepo() => new(configDirectory);
+    private Repository OpenRepo() => new(_configDirectory);
 
     private static Signature GetSignature(Repository repo) {
         var name = repo.Config.Get<string>("user.name")?.Value ?? "RackPeek";
@@ -156,7 +186,7 @@ public sealed class LibGit2GitRepository(
             repo,
             remote.Name,
             remote.FetchRefSpecs.Select(r => r.Specification),
-            new FetchOptions { CredentialsProvider = _credentials },
+            BuildFetchOptions(),
             null);
 
         // If the repo has no commits yet (unborn branch)
@@ -188,7 +218,7 @@ public sealed class LibGit2GitRepository(
             repo.Network.Push(
                 remote,
                 refSpec,
-                new PushOptions { CredentialsProvider = _credentials });
+                BuildPushOptions());
         }
         catch (NonFastForwardException) {
             PullInternal(repo);
@@ -196,7 +226,7 @@ public sealed class LibGit2GitRepository(
             repo.Network.Push(
                 remote,
                 refSpec,
-                new PushOptions { CredentialsProvider = _credentials });
+                BuildPushOptions());
         }
 
         if (repo.Head.TrackedBranch is null) {
@@ -220,7 +250,7 @@ public sealed class LibGit2GitRepository(
             repo,
             remote.Name,
             remote.FetchRefSpecs.Select(r => r.Specification),
-            new FetchOptions { CredentialsProvider = _credentials },
+            BuildFetchOptions(),
             null);
 
         Branch? remoteBranch = repo.Branches[$"{remote.Name}/{repo.Head.FriendlyName}"];
@@ -249,7 +279,7 @@ public sealed class LibGit2GitRepository(
             repo,
             remote.Name,
             remote.FetchRefSpecs.Select(r => r.Specification),
-            new FetchOptions { CredentialsProvider = _credentials },
+            BuildFetchOptions(),
             null);
 
         // detect if remote has a default branch
@@ -288,7 +318,7 @@ public sealed class LibGit2GitRepository(
                 repo.Network.Push(
                     remote,
                     $"refs/heads/{importBranchName}:refs/heads/{importBranchName}",
-                    new PushOptions { CredentialsProvider = _credentials });
+                    BuildPushOptions());
 
                 repo.Branches.Update(importBranch,
                     b => b.TrackedBranch = $"refs/remotes/{remote.Name}/{importBranchName}");
@@ -316,7 +346,7 @@ public sealed class LibGit2GitRepository(
             repo.Network.Push(
                 remote,
                 $"refs/heads/{branchName}:refs/heads/{branchName}",
-                new PushOptions { CredentialsProvider = _credentials });
+                BuildPushOptions());
 
             repo.Branches.Update(branch,
                 b => b.TrackedBranch = $"refs/remotes/{remote.Name}/{branchName}");

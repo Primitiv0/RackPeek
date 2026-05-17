@@ -15,7 +15,7 @@ public class RouterPortUpdateSettings : RouterNameSettings {
 
 public class RouterPortUpdateCommand(IServiceProvider sp)
     : AsyncCommand<RouterPortUpdateSettings> {
-    public override async Task<int> ExecuteAsync(CommandContext ctx, RouterPortUpdateSettings s, CancellationToken ct) {
+    protected override async Task<int> ExecuteAsync(CommandContext ctx, RouterPortUpdateSettings s, CancellationToken ct) {
         using IServiceScope scope = sp.CreateScope();
         IUpdatePortUseCase<Router> useCase = scope.ServiceProvider.GetRequiredService<IUpdatePortUseCase<Router>>();
 

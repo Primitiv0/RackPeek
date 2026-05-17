@@ -12,7 +12,7 @@ public class SystemLabelAddSettings : SystemNameSettings {
 }
 
 public class SystemLabelAddCommand(IServiceProvider serviceProvider) : AsyncCommand<SystemLabelAddSettings> {
-    public override async Task<int> ExecuteAsync(CommandContext context, SystemLabelAddSettings settings,
+    protected override async Task<int> ExecuteAsync(CommandContext context, SystemLabelAddSettings settings,
         CancellationToken cancellationToken) {
         using IServiceScope scope = serviceProvider.CreateScope();
         IAddLabelUseCase<SystemResource> useCase =

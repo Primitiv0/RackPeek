@@ -7,7 +7,7 @@ namespace Shared.Rcl.Commands.Desktops;
 
 public sealed class DesktopTreeCommand(GetHardwareSystemTreeUseCase useCase)
     : AsyncCommand<DesktopNameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         DesktopNameSettings settings,
         CancellationToken cancellationToken) {

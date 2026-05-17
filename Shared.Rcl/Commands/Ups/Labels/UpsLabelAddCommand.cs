@@ -12,7 +12,7 @@ public class UpsLabelAddSettings : UpsNameSettings {
 }
 
 public class UpsLabelAddCommand(IServiceProvider serviceProvider) : AsyncCommand<UpsLabelAddSettings> {
-    public override async Task<int> ExecuteAsync(CommandContext context, UpsLabelAddSettings settings,
+    protected override async Task<int> ExecuteAsync(CommandContext context, UpsLabelAddSettings settings,
         CancellationToken cancellationToken) {
         using IServiceScope scope = serviceProvider.CreateScope();
         IAddLabelUseCase<UpsUnit> useCase = scope.ServiceProvider.GetRequiredService<IAddLabelUseCase<UpsUnit>>();

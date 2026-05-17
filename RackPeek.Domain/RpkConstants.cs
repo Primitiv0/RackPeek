@@ -1,7 +1,7 @@
 namespace RackPeek.Domain;
 
 public static class RpkConstants {
-    public const string Version = "v1.3.1";
+    public const string Version = "v1.4.0";
 
-    public static bool HasGitServices = false;
+    public static bool HasGitServices { get; set; }
 }

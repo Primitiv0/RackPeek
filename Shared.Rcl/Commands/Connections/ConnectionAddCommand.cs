@@ -43,7 +43,7 @@ public class ConnectionAddSettings : CommandSettings {
 public class ConnectionAddCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<ConnectionAddSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ConnectionAddSettings settings,
         CancellationToken cancellationToken) {

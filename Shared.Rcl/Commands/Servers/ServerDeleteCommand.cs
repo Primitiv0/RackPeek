@@ -9,7 +9,7 @@ namespace Shared.Rcl.Commands.Servers;
 public class ServerDeleteCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<ServerNameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ServerNameSettings settings,
         CancellationToken cancellationToken) {

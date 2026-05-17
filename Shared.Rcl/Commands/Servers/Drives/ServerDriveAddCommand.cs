@@ -19,7 +19,7 @@ public class ServerDriveAddSettings : ServerNameSettings {
 
 public class ServerDriveAddCommand(IServiceProvider serviceProvider)
     : AsyncCommand<ServerDriveAddSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ServerDriveAddSettings settings,
         CancellationToken cancellationToken) {

@@ -12,7 +12,7 @@ public class RouterPortRemoveSettings : RouterNameSettings {
 
 public class RouterPortRemoveCommand(IServiceProvider sp)
     : AsyncCommand<RouterPortRemoveSettings> {
-    public override async Task<int> ExecuteAsync(CommandContext ctx, RouterPortRemoveSettings s, CancellationToken ct) {
+    protected override async Task<int> ExecuteAsync(CommandContext ctx, RouterPortRemoveSettings s, CancellationToken ct) {
         using IServiceScope scope = sp.CreateScope();
         IRemovePortUseCase<Router> useCase = scope.ServiceProvider.GetRequiredService<IRemovePortUseCase<Router>>();
 

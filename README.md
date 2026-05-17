@@ -1,6 +1,6 @@
 [![RackPeek demo](./assets/rackpeek_banner_thin.png)](./assets/rackpeek_banner_thin.png)
 
-![Version](https://img.shields.io/badge/Version-1.3.0-2ea44f) ![Status](https://img.shields.io/badge/Status-Stable-success)
+![Version](https://img.shields.io/badge/Version-1.4.0-2ea44f) ![Status](https://img.shields.io/badge/Status-Stable-success)
 [![Join our Discord](https://img.shields.io/badge/Discord-Join%20Us-7289DA?logo=discord&logoColor=white)](https://discord.gg/egXRPdesee) [![Live Demo](https://img.shields.io/badge/Live%20Demo-Try%20RackPeek%20Online-2ea44f?logo=githubpages&logoColor=white)](https://timmoth.github.io/RackPeek/) [![Docker Hub](https://img.shields.io/badge/Docker%20Hub-rackpeek-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/aptacode/rackpeek/)
 
 RackPeek is a webui & CLI tool for documenting and managing home lab and small-scale IT infrastructure.
@@ -53,9 +53,10 @@ services:
       - rackpeek-config:/app/config
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:8080 | grep -q 'rackpeek' || exit 1"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
+      start_period: 15s
       retries: 3
 
 volumes:

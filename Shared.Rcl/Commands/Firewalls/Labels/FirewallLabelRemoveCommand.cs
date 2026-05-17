@@ -11,7 +11,7 @@ public class FirewallLabelRemoveSettings : FirewallNameSettings {
 }
 
 public class FirewallLabelRemoveCommand(IServiceProvider serviceProvider) : AsyncCommand<FirewallLabelRemoveSettings> {
-    public override async Task<int> ExecuteAsync(CommandContext context, FirewallLabelRemoveSettings settings,
+    protected override async Task<int> ExecuteAsync(CommandContext context, FirewallLabelRemoveSettings settings,
         CancellationToken cancellationToken) {
         using IServiceScope scope = serviceProvider.CreateScope();
         IRemoveLabelUseCase<Firewall> useCase =

@@ -99,17 +99,12 @@ dotnet build
 playwright install
 ```
 
+> ⚠ **Re-run `playwright install` whenever the `Microsoft.Playwright` NuGet is bumped.** Each Playwright release pins a specific Chromium build (e.g. 1.58 ships `chromium_headless_shell-1208`, 1.59 ships `-1217`). If the cache is stale every test fails with `PlaywrightException : Executable doesn't exist at .../chromium_headless_shell-NNNN`. `just e2e-setup` covers this.
+
 Build Web image (required before running tests):
 
 ```bash
 docker build -t rackpeek:ci -f RackPeek.Web/Dockerfile .
-
-
-docker buildx build \
-  --platform linux/amd64,linux/arm64 \
-  -f ./Dockerfile \
-  -t aptacode/rackpeek-qa:latest \
-  --push ..
 ```
 
 ---

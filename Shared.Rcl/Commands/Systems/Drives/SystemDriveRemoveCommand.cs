@@ -12,7 +12,7 @@ public class SystemDriveRemoveSettings : SystemNameSettings {
 
 public class SystemDriveRemoveCommand(IServiceProvider serviceProvider)
     : AsyncCommand<SystemDriveRemoveSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         SystemDriveRemoveSettings settings,
         CancellationToken cancellationToken) {

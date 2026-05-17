@@ -27,7 +27,7 @@ public class DesktopGpuSetSettings : CommandSettings {
 
 public class DesktopGpuSetCommand(IServiceProvider provider)
     : AsyncCommand<DesktopGpuSetSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         DesktopGpuSetSettings settings,
         CancellationToken cancellationToken) {

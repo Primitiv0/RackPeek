@@ -27,7 +27,7 @@ public class LaptopCpuAddSettings : CommandSettings {
 
 public class LaptopCpuAddCommand(IServiceProvider provider)
     : AsyncCommand<LaptopCpuAddSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         LaptopCpuAddSettings settings,
         CancellationToken cancellationToken) {

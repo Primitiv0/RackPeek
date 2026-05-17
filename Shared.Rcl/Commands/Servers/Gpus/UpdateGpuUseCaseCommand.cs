@@ -16,7 +16,7 @@ public class ServerGpuUpdateSettings : ServerNameSettings {
 
 public class ServerGpuUpdateCommand(IServiceProvider serviceProvider)
     : AsyncCommand<ServerGpuUpdateSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ServerGpuUpdateSettings settings,
         CancellationToken cancellationToken) {

@@ -12,7 +12,7 @@ public class SwitchPortRemoveSettings : SwitchNameSettings {
 
 public class SwitchPortRemoveCommand(IServiceProvider sp)
     : AsyncCommand<SwitchPortRemoveSettings> {
-    public override async Task<int> ExecuteAsync(CommandContext ctx, SwitchPortRemoveSettings s, CancellationToken ct) {
+    protected override async Task<int> ExecuteAsync(CommandContext ctx, SwitchPortRemoveSettings s, CancellationToken ct) {
         using IServiceScope scope = sp.CreateScope();
         IRemovePortUseCase<Switch> useCase = scope.ServiceProvider.GetRequiredService<IRemovePortUseCase<Switch>>();
 

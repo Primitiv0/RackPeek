@@ -9,7 +9,7 @@ namespace Shared.Rcl.Commands.Laptops.Gpus;
 
 public class LaptopGpuSetCommand(IServiceProvider provider)
     : AsyncCommand<LaptopGpuSetSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         LaptopGpuSetSettings settings,
         CancellationToken cancellationToken) {

@@ -8,7 +8,7 @@ namespace Shared.Rcl.Commands.Systems;
 public class SystemGetByNameCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<SystemNameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         SystemNameSettings settings,
         CancellationToken cancellationToken) {

@@ -12,7 +12,7 @@ public class RouterLabelAddSettings : RouterNameSettings {
 }
 
 public class RouterLabelAddCommand(IServiceProvider serviceProvider) : AsyncCommand<RouterLabelAddSettings> {
-    public override async Task<int> ExecuteAsync(CommandContext context, RouterLabelAddSettings settings,
+    protected override async Task<int> ExecuteAsync(CommandContext context, RouterLabelAddSettings settings,
         CancellationToken cancellationToken) {
         using IServiceScope scope = serviceProvider.CreateScope();
         IAddLabelUseCase<Router> useCase = scope.ServiceProvider.GetRequiredService<IAddLabelUseCase<Router>>();

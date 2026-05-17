@@ -13,7 +13,7 @@ public class DesktopReportCommand(
 ) : AsyncCommand {
     private readonly ILogger<DesktopReportCommand> _logger = logger;
 
-    public override async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken) {
+    protected override async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken) {
         using IServiceScope scope = serviceProvider.CreateScope();
         DesktopHardwareReportUseCase useCase = scope.ServiceProvider.GetRequiredService<DesktopHardwareReportUseCase>();
 
