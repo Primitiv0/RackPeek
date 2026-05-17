@@ -82,8 +82,8 @@ public class GlobalSearchTests(
             //       inside the cap given the seeded name prefixes.
             await search.SearchAsync(token);
             await search.AssertResultExistsAsync("service", $"svc-{token}");
-            await search.AssertResultExistsAsync("server",  $"srv-{token}");
-            await search.AssertResultExistsAsync("switch",  $"sw-{token}");
+            await search.AssertResultExistsAsync("server", $"srv-{token}");
+            await search.AssertResultExistsAsync("switch", $"sw-{token}");
 
             // ───── Click navigates to the resource page ─────
             await search.SearchAsync($"svc-{token}");
