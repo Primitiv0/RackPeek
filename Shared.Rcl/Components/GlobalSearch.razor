@@ -1,6 +1,7 @@
 @* Global resource search — header-level palette.
 
    Keyboard:  ↑/↓ move the highlight, Enter navigates, Esc clears.
+   Blur:      Clicking anywhere outside the input closes the dropdown.
 *@
 
 @using Microsoft.AspNetCore.Components.Web
@@ -23,7 +24,8 @@
            @bind="_query"
            @bind:event="oninput"
            @bind:after="RunSearchAsync"
-           @onkeydown="OnKeyDown"/>
+           @onkeydown="OnKeyDown"
+           @onfocusout="OnFocusOut"/>
 
     @if (!string.IsNullOrWhiteSpace(_query))
     {
@@ -67,15 +69,23 @@
 </div>
 
 @code {
+    // Brief delay on focus-out so a click on a result button can fire first.
+    // Browser event order is mousedown → blur → click, so the focus-out fires
+    // before the click handler on the button. The delay lets the click register
+    // before we close the dropdown.
+    private const int _blurCloseDelayMs = 150;
+
     private string _query = string.Empty;
     private IReadOnlyList<SearchResult> _results = [];
-    private IReadOnlyList<Resource>? _resources;
     private int _highlightedIndex;
 
     private async Task RunSearchAsync()
     {
-        _resources ??= await Repo.GetAllOfTypeAsync<Resource>();
-        _results = GlobalSearchService.Search(_resources, _query);
+        // Reload every search so newly added / edited / deleted resources show up
+        // without a hard page refresh. The repo layer is already in-memory, so
+        // this is a cheap dictionary lookup, not a disk read.
+        var resources = await Repo.GetAllOfTypeAsync<Resource>();
+        _results = GlobalSearchService.Search(resources, _query);
         _highlightedIndex = 0;
     }
 
@@ -99,19 +109,32 @@
                 break;
 
             case "Escape":
-                _query = string.Empty;
-                _results = [];
-                _highlightedIndex = 0;
+                Close();
                 break;
+        }
+    }
+
+    private async Task OnFocusOut()
+    {
+        await Task.Delay(_blurCloseDelayMs);
+        if (!string.IsNullOrEmpty(_query))
+        {
+            Close();
+            StateHasChanged();
         }
     }
 
     private void OnResultSelected(SearchResult r)
     {
+        Close();
+        Nav.NavigateTo(r.Url);
+    }
+
+    private void Close()
+    {
         _query = string.Empty;
         _results = [];
         _highlightedIndex = 0;
-        Nav.NavigateTo(r.Url);
     }
 
     private static string Sanitize(string value) =>
