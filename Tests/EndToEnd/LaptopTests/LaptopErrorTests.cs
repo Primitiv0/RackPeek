@@ -68,7 +68,7 @@ public class LaptopErrorTests(TempYamlCliFixture fs, ITestOutputHelper outputHel
         await ExecuteAsync("laptops", "add", "lap01");
 
         (var output, var _) = await ExecuteAsync(
-            "laptops", "drives", "set", "lap01", "3",
+            "laptops", "drive", "set", "lap01", "3",
             "--type", "ssd"
         );
 

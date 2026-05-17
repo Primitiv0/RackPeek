@@ -45,7 +45,7 @@ public class LaptopCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputH
         Assert.Contains("Add a CPU", (await ExecuteAsync("laptops", "cpu", "add", "--help")).Item1);
 
         // Drives help
-        Assert.Contains("Manage storage drives", (await ExecuteAsync("laptops", "drives", "--help")).Item1);
+        Assert.Contains("Manage storage drives", (await ExecuteAsync("laptops", "drive", "--help")).Item1);
 
         // GPU help
         Assert.Contains("Manage GPUs", (await ExecuteAsync("laptops", "gpu", "--help")).Item1);

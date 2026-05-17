@@ -281,6 +281,7 @@ Default branches: feature work targets `staging`; releases flow `staging → mai
 
 - **E2E tests require the Docker image.** `just test-e2e` rebuilds it via `just build-web`. If you change anything in `RackPeek.Web`, `RackPeek.Domain`, or `Shared.Rcl`, the image must be rebuilt before E2E runs.
 - **Playwright browsers** are installed once via `just e2e-setup`. In CI they're cached under `~/.cache/ms-playwright`.
+- **Bumping the `Microsoft.Playwright` package invalidates the browser cache.** Each Playwright version pins a specific Chromium build (e.g. 1.58 → `chromium_headless_shell-1208`, 1.59 → `-1217`). After bumping, every E2E test fails fast with `PlaywrightException : Executable doesn't exist at .../chromium_headless_shell-NNNN`. Re-run `just e2e-setup` (or `~/.dotnet/tools/playwright install chromium`) to download the matching build before running the suite.
 - **Docker image tag** is `rackpeek:ci` locally (referenced by `Tests.E2e/Infra/PlaywrightFixture.cs:9`); the registry tag is `aptacode/rackpeek`.
 - **Debugging E2E**: temporarily set `Headless = false, SlowMo = 1500` in `Tests.E2e/Infra/PlaywrightFixture.cs`. **Always revert before commit** — CI requires headless.
 - **TreatWarningsAsErrors** — a stray `unused-variable` warning fails the whole build. Don't add `#pragma warning disable` to push through; fix the warning.

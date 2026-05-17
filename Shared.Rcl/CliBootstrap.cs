@@ -541,11 +541,11 @@ public static class CliBootstrap {
                 });
 
                 // Drives
-                laptops.AddBranch("drives", drives => {
-                    drives.SetDescription("Manage storage drives attached to Laptops.");
-                    drives.AddCommand<LaptopDriveAddCommand>("add").WithDescription("Add a drive to a Laptop.");
-                    drives.AddCommand<LaptopDriveSetCommand>("set").WithDescription("Update a Laptop drive.");
-                    drives.AddCommand<LaptopDriveRemoveCommand>("del").WithDescription("Remove a drive from a Laptop.");
+                laptops.AddBranch("drive", drive => {
+                    drive.SetDescription("Manage storage drives attached to Laptops.");
+                    drive.AddCommand<LaptopDriveAddCommand>("add").WithDescription("Add a drive to a Laptop.");
+                    drive.AddCommand<LaptopDriveSetCommand>("set").WithDescription("Update a Laptop drive.");
+                    drive.AddCommand<LaptopDriveRemoveCommand>("del").WithDescription("Remove a drive from a Laptop.");
                 });
 
                 // GPUs
