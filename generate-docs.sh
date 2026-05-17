@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_PATH="."
-OUTPUT_FILE="COMMANDS.md"
 declare -A VISITED
 
 TREE_TEMP=$(mktemp)
