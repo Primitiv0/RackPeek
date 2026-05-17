@@ -34,9 +34,10 @@ services:
       - rackpeek-config:/app/config
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:8080 | grep -q 'rackpeek' || exit 1"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
+      start_period: 15s
       retries: 3
 
 volumes:

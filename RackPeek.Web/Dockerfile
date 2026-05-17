@@ -42,6 +42,12 @@ WORKDIR /app
 
 USER root
 
+# Install curl for the container HEALTHCHECK probe (the aspnet runtime image
+# ships without curl/wget, so without this the HEALTHCHECK below cannot run).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 # Create shared config directory safely
 RUN mkdir -p /app/config \
     && chown -R ${APP_UID}:0 /app/config \
@@ -67,5 +73,8 @@ ENV RPK_YAML_DIR=/app/config
 
 # Drop privileges
 USER ${APP_UID}
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl -fsS http://localhost:8080/health || exit 1
 
 ENTRYPOINT ["dotnet", "RackPeek.Web.dll"]
