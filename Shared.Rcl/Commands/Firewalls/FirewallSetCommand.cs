@@ -17,7 +17,7 @@ public class FirewallSetSettings : ServerNameSettings {
 public class FirewallSetCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<FirewallSetSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         FirewallSetSettings settings,
         CancellationToken cancellationToken) {

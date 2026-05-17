@@ -14,7 +14,7 @@ public class RouterPortAddSettings : RouterNameSettings {
 
 public class RouterPortAddCommand(IServiceProvider sp)
     : AsyncCommand<RouterPortAddSettings> {
-    public override async Task<int> ExecuteAsync(CommandContext ctx, RouterPortAddSettings s, CancellationToken ct) {
+    protected override async Task<int> ExecuteAsync(CommandContext ctx, RouterPortAddSettings s, CancellationToken ct) {
         using IServiceScope scope = sp.CreateScope();
         IAddPortUseCase<Router> useCase = scope.ServiceProvider.GetRequiredService<IAddPortUseCase<Router>>();
 

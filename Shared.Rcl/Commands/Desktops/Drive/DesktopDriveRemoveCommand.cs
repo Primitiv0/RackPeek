@@ -19,7 +19,7 @@ public class DesktopDriveRemoveSettings : CommandSettings {
 
 public class DesktopDriveRemoveCommand(IServiceProvider provider)
     : AsyncCommand<DesktopDriveRemoveSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         DesktopDriveRemoveSettings settings,
         CancellationToken cancellationToken) {

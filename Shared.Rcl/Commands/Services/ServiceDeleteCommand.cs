@@ -9,7 +9,7 @@ namespace Shared.Rcl.Commands.Services;
 public class ServiceDeleteCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<ServiceNameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ServiceNameSettings settings,
         CancellationToken cancellationToken) {

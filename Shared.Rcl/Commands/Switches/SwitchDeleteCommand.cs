@@ -9,7 +9,7 @@ namespace Shared.Rcl.Commands.Switches;
 public class SwitchDeleteCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<SwitchNameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         SwitchNameSettings settings,
         CancellationToken cancellationToken) {

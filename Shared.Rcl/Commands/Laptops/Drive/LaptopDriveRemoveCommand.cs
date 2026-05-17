@@ -8,7 +8,7 @@ namespace Shared.Rcl.Commands.Laptops.Drive;
 
 public class LaptopDriveRemoveCommand(IServiceProvider provider)
     : AsyncCommand<LaptopDriveRemoveSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         LaptopDriveRemoveSettings settings,
         CancellationToken cancellationToken) {

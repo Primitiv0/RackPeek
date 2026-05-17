@@ -23,7 +23,7 @@ public class ConnectionRemoveSettings : CommandSettings {
 public class ConnectionRemoveCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<ConnectionRemoveSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ConnectionRemoveSettings settings,
         CancellationToken cancellationToken) {

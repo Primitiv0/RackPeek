@@ -17,7 +17,7 @@ public class RouterSetSettings : ServerNameSettings {
 public class RouterSetCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<RouterSetSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         RouterSetSettings settings,
         CancellationToken cancellationToken) {

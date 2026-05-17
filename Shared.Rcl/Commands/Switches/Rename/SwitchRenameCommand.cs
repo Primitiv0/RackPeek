@@ -14,7 +14,7 @@ public class SwitchRenameSettings : SwitchNameSettings {
 public class SwitchRenameCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<SwitchRenameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         SwitchRenameSettings settings,
         CancellationToken cancellationToken) {

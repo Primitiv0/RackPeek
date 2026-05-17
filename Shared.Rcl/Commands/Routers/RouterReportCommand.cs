@@ -9,7 +9,7 @@ namespace Shared.Rcl.Commands.Routers;
 public class RouterReportCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand {
-    public override async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken) {
+    protected override async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken) {
         using IServiceScope scope = serviceProvider.CreateScope();
         RouterHardwareReportUseCase useCase = scope.ServiceProvider.GetRequiredService<RouterHardwareReportUseCase>();
 

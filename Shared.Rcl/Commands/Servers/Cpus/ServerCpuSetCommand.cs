@@ -17,7 +17,7 @@ public class ServerCpuSetSettings : ServerNameSettings {
 }
 
 public class ServerCpuSetCommand(IServiceProvider serviceProvider) : AsyncCommand<ServerCpuSetSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ServerCpuSetSettings settings,
         CancellationToken cancellationToken) {

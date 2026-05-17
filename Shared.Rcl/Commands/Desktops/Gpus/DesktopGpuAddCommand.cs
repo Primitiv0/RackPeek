@@ -23,7 +23,7 @@ public class DesktopGpuAddSettings : CommandSettings {
 
 public class DesktopGpuAddCommand(IServiceProvider provider)
     : AsyncCommand<DesktopGpuAddSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         DesktopGpuAddSettings settings,
         CancellationToken cancellationToken) {

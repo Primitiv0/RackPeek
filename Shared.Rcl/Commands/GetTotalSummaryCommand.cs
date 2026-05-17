@@ -9,7 +9,7 @@ using Spectre.Console.Cli;
 namespace Shared.Rcl.Commands;
 
 public class GetTotalSummaryCommand(IServiceProvider provider) : AsyncCommand {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         CancellationToken cancellationToken) {
         using IServiceScope scope = provider.CreateScope();

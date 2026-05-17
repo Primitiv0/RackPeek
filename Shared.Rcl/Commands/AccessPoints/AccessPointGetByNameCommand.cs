@@ -9,7 +9,7 @@ namespace Shared.Rcl.Commands.AccessPoints;
 public class AccessPointGetByNameCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<AccessPointNameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         AccessPointNameSettings settings,
         CancellationToken cancellationToken) {

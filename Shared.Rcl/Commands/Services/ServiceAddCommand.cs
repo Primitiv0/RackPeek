@@ -16,7 +16,7 @@ public class ServiceAddSettings : CommandSettings {
 public class ServiceAddCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<ServiceAddSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ServiceAddSettings settings,
         CancellationToken cancellationToken) {

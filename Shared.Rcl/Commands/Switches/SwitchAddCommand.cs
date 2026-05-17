@@ -13,7 +13,7 @@ public class SwitchAddSettings : CommandSettings {
 public class SwitchAddCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<SwitchAddSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         SwitchAddSettings settings,
         CancellationToken cancellationToken) {

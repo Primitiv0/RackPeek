@@ -14,7 +14,7 @@ public class RouterRenameSettings : RouterNameSettings {
 public class RouterRenameCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<RouterRenameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         RouterRenameSettings settings,
         CancellationToken cancellationToken) {

@@ -9,7 +9,7 @@ namespace Shared.Rcl.Commands.Laptops;
 
 public class LaptopGetCommand(IServiceProvider provider)
     : AsyncCommand {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         CancellationToken cancellationToken) {
         using IServiceScope scope = provider.CreateScope();

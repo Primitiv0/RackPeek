@@ -11,7 +11,7 @@ public class UpsLabelRemoveSettings : UpsNameSettings {
 }
 
 public class UpsLabelRemoveCommand(IServiceProvider serviceProvider) : AsyncCommand<UpsLabelRemoveSettings> {
-    public override async Task<int> ExecuteAsync(CommandContext context, UpsLabelRemoveSettings settings,
+    protected override async Task<int> ExecuteAsync(CommandContext context, UpsLabelRemoveSettings settings,
         CancellationToken cancellationToken) {
         using IServiceScope scope = serviceProvider.CreateScope();
         IRemoveLabelUseCase<UpsUnit> useCase = scope.ServiceProvider.GetRequiredService<IRemoveLabelUseCase<UpsUnit>>();

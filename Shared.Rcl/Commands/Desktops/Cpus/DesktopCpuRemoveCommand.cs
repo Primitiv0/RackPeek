@@ -19,7 +19,7 @@ public class DesktopCpuRemoveSettings : CommandSettings {
 
 public class DesktopCpuRemoveCommand(IServiceProvider provider)
     : AsyncCommand<DesktopCpuRemoveSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         DesktopCpuRemoveSettings settings,
         CancellationToken cancellationToken) {
