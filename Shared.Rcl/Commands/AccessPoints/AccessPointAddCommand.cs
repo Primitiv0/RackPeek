@@ -16,7 +16,7 @@ public class AccessPointAddSettings : CommandSettings {
 public class AccessPointAddCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<AccessPointAddSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         AccessPointAddSettings settings,
         CancellationToken cancellationToken) {

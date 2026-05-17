@@ -8,7 +8,7 @@ namespace Shared.Rcl.Commands.Systems;
 public class SystemReportCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand {
-    public override async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken) {
+    protected override async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken) {
         using IServiceScope scope = serviceProvider.CreateScope();
         SystemReportUseCase useCase = scope.ServiceProvider.GetRequiredService<SystemReportUseCase>();
 

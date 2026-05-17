@@ -14,7 +14,7 @@ public class SystemDriveAddSettings : SystemNameSettings {
 
 public class SystemDriveAddCommand(IServiceProvider serviceProvider)
     : AsyncCommand<SystemDriveAddSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         SystemDriveAddSettings settings,
         CancellationToken cancellationToken) {

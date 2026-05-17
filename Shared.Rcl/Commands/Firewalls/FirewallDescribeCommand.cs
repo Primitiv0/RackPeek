@@ -9,7 +9,7 @@ namespace Shared.Rcl.Commands.Firewalls;
 public class FirewallDescribeCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<FirewallNameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         FirewallNameSettings settings,
         CancellationToken cancellationToken) {

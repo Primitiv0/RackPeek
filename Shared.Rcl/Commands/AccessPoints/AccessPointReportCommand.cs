@@ -13,7 +13,7 @@ public class AccessPointReportCommand(
 ) : AsyncCommand {
     private readonly ILogger<AccessPointReportCommand> _logger = logger;
 
-    public override async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken) {
+    protected override async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken) {
         using IServiceScope scope = serviceProvider.CreateScope();
         AccessPointHardwareReportUseCase useCase =
             scope.ServiceProvider.GetRequiredService<AccessPointHardwareReportUseCase>();

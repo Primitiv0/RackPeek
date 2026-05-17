@@ -12,7 +12,7 @@ public class SwitchLabelAddSettings : SwitchNameSettings {
 }
 
 public class SwitchLabelAddCommand(IServiceProvider serviceProvider) : AsyncCommand<SwitchLabelAddSettings> {
-    public override async Task<int> ExecuteAsync(CommandContext context, SwitchLabelAddSettings settings,
+    protected override async Task<int> ExecuteAsync(CommandContext context, SwitchLabelAddSettings settings,
         CancellationToken cancellationToken) {
         using IServiceScope scope = serviceProvider.CreateScope();
         IAddLabelUseCase<Switch> useCase = scope.ServiceProvider.GetRequiredService<IAddLabelUseCase<Switch>>();

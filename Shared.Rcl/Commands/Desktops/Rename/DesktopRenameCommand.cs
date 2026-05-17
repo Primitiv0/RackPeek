@@ -14,7 +14,7 @@ public class DesktopRenameSettings : DesktopNameSettings {
 public class DesktopRenameCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<DesktopRenameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         DesktopRenameSettings settings,
         CancellationToken cancellationToken) {

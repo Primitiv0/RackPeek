@@ -16,7 +16,7 @@ public class ServerDriveUpdateSettings : ServerNameSettings {
 
 public class ServerDriveUpdateCommand(IServiceProvider serviceProvider)
     : AsyncCommand<ServerDriveUpdateSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ServerDriveUpdateSettings settings,
         CancellationToken cancellationToken) {

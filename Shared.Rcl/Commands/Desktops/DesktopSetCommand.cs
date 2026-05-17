@@ -11,7 +11,7 @@ public class DesktopSetSettings : DesktopNameSettings {
 
 public class DesktopSetCommand(IServiceProvider provider)
     : AsyncCommand<DesktopSetSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         DesktopSetSettings settings,
         CancellationToken cancellationToken) {

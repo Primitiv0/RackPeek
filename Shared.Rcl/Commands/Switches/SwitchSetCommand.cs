@@ -17,7 +17,7 @@ public class SwitchSetSettings : ServerNameSettings {
 public class SwitchSetCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<SwitchSetSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         SwitchSetSettings settings,
         CancellationToken cancellationToken) {

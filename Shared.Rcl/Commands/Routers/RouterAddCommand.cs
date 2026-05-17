@@ -13,7 +13,7 @@ public class RouterAddSettings : CommandSettings {
 public class RouterAddCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<RouterAddSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         RouterAddSettings settings,
         CancellationToken cancellationToken) {

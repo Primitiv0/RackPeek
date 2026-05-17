@@ -50,7 +50,7 @@ public class LaptopWorkflowTests(TempYamlCliFixture fs, ITestOutputHelper output
 
         // Add Drive
         (output, yaml) = await ExecuteAsync(
-            "laptops", "drives", "add", "lap01",
+            "laptops", "drive", "add", "lap01",
             "--type", "ssd",
             "--size", "512"
         );

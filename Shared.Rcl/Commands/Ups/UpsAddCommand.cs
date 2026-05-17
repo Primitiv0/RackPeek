@@ -11,7 +11,7 @@ public class UpsAddSettings : CommandSettings {
 
 public class UpsAddCommand(IServiceProvider provider)
     : AsyncCommand<UpsAddSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         UpsAddSettings settings,
         CancellationToken cancellationToken) {

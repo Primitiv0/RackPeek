@@ -18,7 +18,7 @@ public class ServerNicUpdateSettings : ServerNameSettings {
 
 public class ServerNicUpdateCommand(IServiceProvider serviceProvider)
     : AsyncCommand<ServerNicUpdateSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ServerNicUpdateSettings settings,
         CancellationToken cancellationToken) {

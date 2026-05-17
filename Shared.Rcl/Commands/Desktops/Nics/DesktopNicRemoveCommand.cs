@@ -19,7 +19,7 @@ public class DesktopNicRemoveSettings : CommandSettings {
 
 public class DesktopNicRemoveCommand(IServiceProvider provider)
     : AsyncCommand<DesktopNicRemoveSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         DesktopNicRemoveSettings settings,
         CancellationToken cancellationToken) {

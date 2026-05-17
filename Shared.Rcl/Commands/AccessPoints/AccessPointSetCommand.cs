@@ -20,7 +20,7 @@ public class AccessPointSetSettings : ServerNameSettings {
 public class AccessPointSetCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<AccessPointSetSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         AccessPointSetSettings settings,
         CancellationToken cancellationToken) {

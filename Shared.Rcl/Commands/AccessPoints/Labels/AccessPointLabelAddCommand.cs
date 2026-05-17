@@ -12,7 +12,7 @@ public class AccessPointLabelAddSettings : AccessPointNameSettings {
 }
 
 public class AccessPointLabelAddCommand(IServiceProvider serviceProvider) : AsyncCommand<AccessPointLabelAddSettings> {
-    public override async Task<int> ExecuteAsync(CommandContext context, AccessPointLabelAddSettings settings,
+    protected override async Task<int> ExecuteAsync(CommandContext context, AccessPointLabelAddSettings settings,
         CancellationToken cancellationToken) {
         using IServiceScope scope = serviceProvider.CreateScope();
         IAddLabelUseCase<AccessPoint> useCase =

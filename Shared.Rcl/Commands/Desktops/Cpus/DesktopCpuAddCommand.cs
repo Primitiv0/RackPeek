@@ -27,7 +27,7 @@ public class DesktopCpuAddSettings : CommandSettings {
 
 public class DesktopCpuAddCommand(IServiceProvider provider)
     : AsyncCommand<DesktopCpuAddSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         DesktopCpuAddSettings settings,
         CancellationToken cancellationToken) {

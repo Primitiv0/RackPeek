@@ -13,7 +13,7 @@ public class UpsSetSettings : ServerNameSettings {
 
 public class UpsSetCommand(IServiceProvider provider)
     : AsyncCommand<UpsSetSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         UpsSetSettings settings,
         CancellationToken cancellationToken) {

@@ -7,7 +7,7 @@ using Spectre.Console.Cli;
 namespace Shared.Rcl.Commands.Systems;
 
 public sealed class SystemTreeCommand(GetSystemServiceTreeUseCase useCase) : AsyncCommand<SystemNameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         SystemNameSettings settings,
         CancellationToken cancellationToken) {

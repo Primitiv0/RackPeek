@@ -19,7 +19,7 @@ public class LaptopCpuRemoveSettings : CommandSettings {
 
 public class LaptopCpuRemoveCommand(IServiceProvider provider)
     : AsyncCommand<LaptopCpuRemoveSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         LaptopCpuRemoveSettings settings,
         CancellationToken cancellationToken) {

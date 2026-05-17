@@ -11,7 +11,7 @@ public class RouterLabelRemoveSettings : RouterNameSettings {
 }
 
 public class RouterLabelRemoveCommand(IServiceProvider serviceProvider) : AsyncCommand<RouterLabelRemoveSettings> {
-    public override async Task<int> ExecuteAsync(CommandContext context, RouterLabelRemoveSettings settings,
+    protected override async Task<int> ExecuteAsync(CommandContext context, RouterLabelRemoveSettings settings,
         CancellationToken cancellationToken) {
         using IServiceScope scope = serviceProvider.CreateScope();
         IRemoveLabelUseCase<Router> useCase = scope.ServiceProvider.GetRequiredService<IRemoveLabelUseCase<Router>>();

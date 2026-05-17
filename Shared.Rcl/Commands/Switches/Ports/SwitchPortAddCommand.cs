@@ -23,7 +23,7 @@ public class SwitchPortAddSettings : SwitchNameSettings {
 
 public class SwitchPortAddCommand(IServiceProvider sp)
     : AsyncCommand<SwitchPortAddSettings> {
-    public override async Task<int> ExecuteAsync(CommandContext ctx, SwitchPortAddSettings s, CancellationToken ct) {
+    protected override async Task<int> ExecuteAsync(CommandContext ctx, SwitchPortAddSettings s, CancellationToken ct) {
         using IServiceScope scope = sp.CreateScope();
         IAddPortUseCase<Switch> useCase = scope.ServiceProvider.GetRequiredService<IAddPortUseCase<Switch>>();
 

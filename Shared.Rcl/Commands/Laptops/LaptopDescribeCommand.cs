@@ -7,7 +7,7 @@ namespace Shared.Rcl.Commands.Laptops;
 
 public class LaptopDescribeCommand(IServiceProvider provider)
     : AsyncCommand<LaptopNameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         LaptopNameSettings settings,
         CancellationToken cancellationToken) {

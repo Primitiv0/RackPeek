@@ -14,7 +14,7 @@ public class AccessPointRenameSettings : AccessPointNameSettings {
 public class AccessPointRenameCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<AccessPointRenameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         AccessPointRenameSettings settings,
         CancellationToken cancellationToken) {

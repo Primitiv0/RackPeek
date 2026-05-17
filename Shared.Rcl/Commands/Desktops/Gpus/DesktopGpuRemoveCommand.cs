@@ -19,7 +19,7 @@ public class DesktopGpuRemoveSettings : CommandSettings {
 
 public class DesktopGpuRemoveCommand(IServiceProvider provider)
     : AsyncCommand<DesktopGpuRemoveSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         DesktopGpuRemoveSettings settings,
         CancellationToken cancellationToken) {

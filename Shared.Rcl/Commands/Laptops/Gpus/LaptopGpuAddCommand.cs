@@ -8,7 +8,7 @@ namespace Shared.Rcl.Commands.Laptops.Gpus;
 
 public class LaptopGpuAddCommand(IServiceProvider provider)
     : AsyncCommand<LaptopGpuAddSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         LaptopGpuAddSettings settings,
         CancellationToken cancellationToken) {

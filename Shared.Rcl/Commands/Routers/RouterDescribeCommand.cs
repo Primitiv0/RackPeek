@@ -8,7 +8,7 @@ namespace Shared.Rcl.Commands.Routers;
 public class RouterDescribeCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<RouterNameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         RouterNameSettings settings,
         CancellationToken cancellationToken) {

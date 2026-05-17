@@ -11,7 +11,7 @@ public class LaptopSetSettings : LaptopNameSettings {
 
 public class LaptopSetCommand(IServiceProvider provider)
     : AsyncCommand<LaptopSetSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         LaptopSetSettings settings,
         CancellationToken cancellationToken) {

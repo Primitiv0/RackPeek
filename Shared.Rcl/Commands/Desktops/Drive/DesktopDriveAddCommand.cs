@@ -23,7 +23,7 @@ public class DesktopDriveAddSettings : CommandSettings {
 
 public class DesktopDriveAddCommand(IServiceProvider provider)
     : AsyncCommand<DesktopDriveAddSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         DesktopDriveAddSettings settings,
         CancellationToken cancellationToken) {

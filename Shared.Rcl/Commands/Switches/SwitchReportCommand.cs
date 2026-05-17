@@ -9,7 +9,7 @@ namespace Shared.Rcl.Commands.Switches;
 public class SwitchReportCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand {
-    public override async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken) {
+    protected override async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken) {
         using IServiceScope scope = serviceProvider.CreateScope();
         SwitchHardwareReportUseCase useCase = scope.ServiceProvider.GetRequiredService<SwitchHardwareReportUseCase>();
 

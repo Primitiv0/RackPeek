@@ -7,7 +7,7 @@ namespace Shared.Rcl.Commands.Exporters;
 
 public sealed class GenerateSshConfigCommand(IServiceProvider provider)
     : AsyncCommand<GenerateSshConfigSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         GenerateSshConfigSettings settings,
         CancellationToken cancellationToken) {

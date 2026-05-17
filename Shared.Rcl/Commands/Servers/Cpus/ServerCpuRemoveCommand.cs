@@ -11,7 +11,7 @@ public class ServerCpuRemoveSettings : ServerNameSettings {
 }
 
 public class ServerCpuRemoveCommand(IServiceProvider serviceProvider) : AsyncCommand<ServerCpuRemoveSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ServerCpuRemoveSettings settings,
         CancellationToken cancellationToken) {

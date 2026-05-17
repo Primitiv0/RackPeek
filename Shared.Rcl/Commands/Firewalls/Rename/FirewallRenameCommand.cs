@@ -14,7 +14,7 @@ public class FirewallRenameSettings : FirewallNameSettings {
 public class FirewallRenameCommand(
     IServiceProvider serviceProvider
 ) : AsyncCommand<FirewallRenameSettings> {
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         FirewallRenameSettings settings,
         CancellationToken cancellationToken) {
