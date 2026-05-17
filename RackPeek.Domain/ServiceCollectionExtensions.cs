@@ -30,13 +30,15 @@ public static class ServiceCollectionExtensions {
         var gitToken = config["GIT_TOKEN"];
         if (!string.IsNullOrEmpty(gitToken) && !string.IsNullOrWhiteSpace(yamlPath)) {
             var gitUsername = config["GIT_USERNAME"] ?? "git";
+            var insecureTls = string.Equals(
+                config["GIT_INSECURE_TLS"], "true", StringComparison.OrdinalIgnoreCase);
 
             services.AddSingleton<IGitCredentialsProvider>(
-                _ => new GitHubTokenCredentialsProvider(gitUsername, gitToken));
+                _ => new TokenCredentialsProvider(gitUsername, gitToken));
 
             services.AddSingleton<IGitRepository>(sp => {
                 IGitCredentialsProvider creds = sp.GetRequiredService<IGitCredentialsProvider>();
-                return new LibGit2GitRepository(yamlPath, creds);
+                return new LibGit2GitRepository(yamlPath, creds, insecureTls);
             });
             RpkConstants.HasGitServices = true;
         }
