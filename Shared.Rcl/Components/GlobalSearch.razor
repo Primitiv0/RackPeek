@@ -1,0 +1,142 @@
+@* Global resource search — header-level palette.
+
+   Keyboard:  ↑/↓ move the highlight, Enter navigates, Esc clears.
+   Blur:      Clicking anywhere outside the input closes the dropdown.
+*@
+
+@using Microsoft.AspNetCore.Components.Web
+@using RackPeek.Domain.Persistence
+@using RackPeek.Domain.Resources
+@using Shared.Rcl.Services
+
+@inject IResourceCollection Repo
+@inject NavigationManager Nav
+
+<div class="relative">
+    <input type="search"
+           data-testid="global-search-input"
+           placeholder="Search resources…"
+           autocomplete="off"
+           class="bg-zinc-800 text-zinc-200 placeholder-zinc-500
+                  border border-zinc-700 rounded
+                  px-3 py-1 text-sm w-72
+                  focus:outline-none focus:border-emerald-400"
+           @bind="_query"
+           @bind:event="oninput"
+           @bind:after="RunSearchAsync"
+           @onkeydown="OnKeyDown"
+           @onfocusout="OnFocusOut"/>
+
+    @if (!string.IsNullOrWhiteSpace(_query))
+    {
+        <div data-testid="global-search-results"
+             class="absolute left-0 right-0 mt-1 z-50
+                    bg-zinc-900 border border-zinc-700 rounded
+                    shadow-lg max-h-96 overflow-y-auto text-sm">
+
+            @if (_results.Count == 0)
+            {
+                <div data-testid="global-search-no-results"
+                     class="px-3 py-2 text-zinc-500 italic">
+                    No matches.
+                </div>
+            }
+            else
+            {
+                @for (var i = 0; i < _results.Count; i++)
+                {
+                    var r = _results[i];
+                    var highlighted = i == _highlightedIndex;
+                    var rowClass = highlighted
+                        ? "bg-zinc-800 border-l-2 border-emerald-400"
+                        : "hover:bg-zinc-800 border-l-2 border-transparent";
+
+                    <button type="button"
+                            data-testid="@($"global-search-result-{Sanitize(r.Kind)}-{Sanitize(r.Name)}")"
+                            @onclick="() => OnResultSelected(r)"
+                            class="@($"w-full text-left block px-3 py-2 text-zinc-200 border-b border-zinc-800 last:border-b-0 cursor-pointer {rowClass}")">
+
+                        <div class="font-medium text-emerald-400">@r.Name</div>
+                        <div data-testid="global-search-result-match"
+                             class="text-xs text-zinc-500">
+                            @r.Kind · via @r.MatchedField: @r.MatchedValue
+                        </div>
+                    </button>
+                }
+            }
+        </div>
+    }
+</div>
+
+@code {
+    // Brief delay on focus-out so a click on a result button can fire first.
+    // Browser event order is mousedown → blur → click, so the focus-out fires
+    // before the click handler on the button. The delay lets the click register
+    // before we close the dropdown.
+    private const int _blurCloseDelayMs = 150;
+
+    private string _query = string.Empty;
+    private IReadOnlyList<SearchResult> _results = [];
+    private int _highlightedIndex;
+
+    private async Task RunSearchAsync()
+    {
+        // Reload every search so newly added / edited / deleted resources show up
+        // without a hard page refresh. The repo layer is already in-memory, so
+        // this is a cheap dictionary lookup, not a disk read.
+        var resources = await Repo.GetAllOfTypeAsync<Resource>();
+        _results = GlobalSearchService.Search(resources, _query);
+        _highlightedIndex = 0;
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case "ArrowDown":
+                if (_results.Count > 0)
+                    _highlightedIndex = Math.Min(_highlightedIndex + 1, _results.Count - 1);
+                break;
+
+            case "ArrowUp":
+                if (_results.Count > 0)
+                    _highlightedIndex = Math.Max(_highlightedIndex - 1, 0);
+                break;
+
+            case "Enter":
+                if (_highlightedIndex >= 0 && _highlightedIndex < _results.Count)
+                    OnResultSelected(_results[_highlightedIndex]);
+                break;
+
+            case "Escape":
+                Close();
+                break;
+        }
+    }
+
+    private async Task OnFocusOut()
+    {
+        await Task.Delay(_blurCloseDelayMs);
+        if (!string.IsNullOrEmpty(_query))
+        {
+            Close();
+            StateHasChanged();
+        }
+    }
+
+    private void OnResultSelected(SearchResult r)
+    {
+        Close();
+        Nav.NavigateTo(r.Url);
+    }
+
+    private void Close()
+    {
+        _query = string.Empty;
+        _results = [];
+        _highlightedIndex = 0;
+    }
+
+    private static string Sanitize(string value) =>
+        value.Replace(" ", "-").ToLowerInvariant();
+}
