@@ -35,10 +35,19 @@ public sealed class LibGit2GitRepository : IGitRepository {
         bool insecureTls = false) {
         _configDirectory = configDirectory;
         _credentials = credentialsProvider.GetHandler();
+        // The user opted into git by setting GIT_TOKEN. Auto-init on a fresh
+        // config directory so the UI can immediately offer Add Remote — without
+        // this, first-time users hit "Git is not available." on every action.
+        // Init is idempotent for existing repos (IsValid skips the call) and
+        // does not touch existing files; it only creates .git/.
+        if (Directory.Exists(configDirectory) && !Repository.IsValid(configDirectory))
+            Repository.Init(configDirectory);
+
         _isAvailable = Repository.IsValid(configDirectory);
         // When insecureTls is true, accept any TLS certificate. Required for
         // self-hosted forges (Gitea, GitLab) behind a private CA or self-signed
         // cert. Public hosts already ship trusted certs; leave it off for them.
+        InsecureTls = insecureTls;
         _certificateCheck = insecureTls
             ? (_, _, _) => true
             : null;
@@ -57,6 +66,7 @@ public sealed class LibGit2GitRepository : IGitRepository {
     private bool _isAvailable;
 
     public bool IsAvailable => _isAvailable;
+    public bool InsecureTls { get; }
 
     public void Init() {
         Repository.Init(_configDirectory);

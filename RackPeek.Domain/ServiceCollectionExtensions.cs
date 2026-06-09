@@ -28,7 +28,7 @@ public static class ServiceCollectionExtensions {
         IConfiguration config,
         string? yamlPath = null) {
         var gitToken = config["GIT_TOKEN"];
-        if (!string.IsNullOrEmpty(gitToken) && !string.IsNullOrWhiteSpace(yamlPath)) {
+        if (!string.IsNullOrWhiteSpace(gitToken) && !string.IsNullOrWhiteSpace(yamlPath)) {
             var gitUsername = config["GIT_USERNAME"] ?? "git";
             var insecureTls = string.Equals(
                 config["GIT_INSECURE_TLS"], "true", StringComparison.OrdinalIgnoreCase);
