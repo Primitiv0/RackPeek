@@ -666,4 +666,133 @@ public class InventoryEndpointTests(ITestOutputHelper output) : ApiTestBase(outp
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Health_Endpoint_Is_Anonymous_And_Returns_rackpeek() {
+        HttpClient client = CreateClient();
+
+        HttpResponseMessage response = await client.GetAsync("/health");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("text/plain", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("rackpeek", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Wrong_Api_Key_Returns_401() {
+        HttpClient client = Factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Api-Key", "definitely-wrong");
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/inventory",
+            new { yaml = "resources:\n  - kind: Server\n    name: x" });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Bad_Request_Body_Contains_Error_Field() {
+        HttpClient client = CreateClient(true);
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/inventory", new { });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        Dictionary<string, string>? body =
+            await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+
+        Assert.NotNull(body);
+        Assert.True(body!.ContainsKey("error"));
+        Assert.False(string.IsNullOrWhiteSpace(body["error"]));
+    }
+
+    [Fact]
+    public async Task Added_Resource_Has_No_OldYaml_Entry() {
+        HttpClient client = CreateClient(true);
+
+        var yaml = """
+                   resources:
+                     - kind: Server
+                       name: fresh-server
+                   """;
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/inventory", new { yaml });
+
+        ImportYamlResponse? result = await response.Content.ReadFromJsonAsync<ImportYamlResponse>();
+
+        Assert.Contains("fresh-server", result!.Added);
+        Assert.DoesNotContain("fresh-server", result.OldYaml.Keys);
+        Assert.Contains("fresh-server", result.NewYaml.Keys);
+    }
+
+    [Fact]
+    public async Task Merge_Replaces_Tags_Wholesale() {
+        HttpClient client = CreateClient(true);
+
+        var initial = """
+                      resources:
+                        - kind: Server
+                          name: tag-merge
+                          tags:
+                            - alpha
+                            - beta
+                      """;
+
+        await client.PostAsJsonAsync("/api/inventory", new { yaml = initial });
+
+        var update = """
+                     resources:
+                       - kind: Server
+                         name: tag-merge
+                         tags:
+                           - gamma
+                     """;
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/inventory",
+            new { yaml = update, mode = "Merge" });
+
+        ImportYamlResponse? result = await response.Content.ReadFromJsonAsync<ImportYamlResponse>();
+
+        Assert.Contains("tag-merge", result!.Updated);
+
+        var newYaml = result.NewYaml["tag-merge"];
+        Assert.Contains("gamma", newYaml);
+        Assert.DoesNotContain("alpha", newYaml);
+        Assert.DoesNotContain("beta", newYaml);
+    }
+
+    [Fact]
+    public async Task Merge_Preserves_Labels_Not_In_Incoming() {
+        HttpClient client = CreateClient(true);
+
+        var initial = """
+                      resources:
+                        - kind: Server
+                          name: label-merge
+                          labels:
+                            env: production
+                            team: backend
+                      """;
+
+        await client.PostAsJsonAsync("/api/inventory", new { yaml = initial });
+
+        var update = """
+                     resources:
+                       - kind: Server
+                         name: label-merge
+                         labels:
+                           env: staging
+                     """;
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/inventory",
+            new { yaml = update, mode = "Merge" });
+
+        ImportYamlResponse? result = await response.Content.ReadFromJsonAsync<ImportYamlResponse>();
+
+        Assert.Contains("label-merge", result!.Updated);
+
+        var newYaml = result.NewYaml["label-merge"];
+        Assert.Contains("env: staging", newYaml);
+        Assert.Contains("team: backend", newYaml);
+        Assert.DoesNotContain("env: production", newYaml);
+    }
 }

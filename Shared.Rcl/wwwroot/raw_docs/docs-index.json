@@ -9,5 +9,6 @@
   "cli-commands-index.md",
   "ssh-config-export.md",
   "hosts-file-export.md",
+  "inventory-api.md",
   "versioning.md"
 ]
