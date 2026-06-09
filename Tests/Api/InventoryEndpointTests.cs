@@ -760,6 +760,59 @@ public class InventoryEndpointTests(ITestOutputHelper output) : ApiTestBase(outp
         Assert.DoesNotContain("beta", newYaml);
     }
 
+    [Theory]
+    [InlineData("Server")]
+    [InlineData("Switch")]
+    [InlineData("Router")]
+    [InlineData("Firewall")]
+    [InlineData("AccessPoint")]
+    [InlineData("Ups")]
+    [InlineData("Desktop")]
+    [InlineData("Laptop")]
+    [InlineData("Service")]
+    [InlineData("System")]
+    public async Task Documented_Kind_Discriminator_Values_Are_Accepted(string kind) {
+        // The inventory-api doc lists the exact set of valid kind discriminator
+        // values. Every one must be accepted as-is so the doc and runtime stay
+        // in lockstep.
+        HttpClient client = CreateClient(true);
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/inventory",
+            new {
+                json = new {
+                    version = 3,
+                    resources = new[]
+                    {
+                        new { kind, name = $"kind-probe-{kind.ToLowerInvariant()}" }
+                    }
+                }
+            });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Lowercase_Kind_Is_Rejected() {
+        // The discriminator is case-sensitive — the doc must use exact casing
+        // or users hit 400. This test pins that contract so a future refactor
+        // making the kind case-insensitive would surface here and prompt a
+        // doc update.
+        HttpClient client = CreateClient(true);
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/inventory",
+            new {
+                json = new {
+                    version = 3,
+                    resources = new[]
+                    {
+                        new { kind = "server", name = "lowercase-probe" }
+                    }
+                }
+            });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
     [Fact]
     public async Task Merge_Preserves_Labels_Not_In_Incoming() {
         HttpClient client = CreateClient(true);

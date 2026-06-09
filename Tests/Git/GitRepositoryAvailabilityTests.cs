@@ -102,6 +102,39 @@ public sealed class GitRepositoryAvailabilityTests : IDisposable {
     }
 
     [Fact]
+    public void Readonly_Config_Directory_Does_Not_Throw_From_Constructor() {
+        // Doc promises the UI will surface "Git configured but config directory
+        // is not writable" when init can't run — that requires the constructor
+        // to swallow the init failure and set IsAvailable=false rather than
+        // crashing the Blazor render that resolves the singleton.
+        if (OperatingSystem.IsWindows())
+            return; // chmod-style read-only doesn't translate cleanly
+
+        var readOnly = Path.Combine(_tempDir, "readonly");
+        Directory.CreateDirectory(readOnly);
+        File.WriteAllText(Path.Combine(readOnly, "config.yaml"), "");
+
+        // Strip write permission for owner + group + other (0555).
+        File.SetUnixFileMode(readOnly,
+            UnixFileMode.UserRead | UnixFileMode.UserExecute |
+            UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+            UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+
+        try {
+            var repo = new LibGit2GitRepository(readOnly, _creds);
+
+            Assert.False(repo.IsAvailable,
+                "constructor must report unavailable, not throw, so the UI can " +
+                "show the documented writability warning");
+        }
+        finally {
+            // Restore write perm so cleanup works.
+            File.SetUnixFileMode(readOnly,
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+    }
+
+    [Fact]
     public async Task Add_Remote_Persists_The_Configured_Origin() {
         // The full happy path that was broken before the fix: construct a repo
         // against a fresh dir, add a remote, confirm it lives on disk so a

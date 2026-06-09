@@ -104,7 +104,7 @@ in the repository.
   "version": 3,
   "resources": [
     {
-      "kind": "server",
+      "kind": "Server",
       "name": "web-01",
       "tags": ["homelab", "prod"],
       "labels": { "env": "production" },
@@ -115,6 +115,10 @@ in the repository.
   "connections": []
 }
 ```
+
+The `kind` discriminator is case-sensitive. Use the exact value for each
+resource type: `Server`, `Switch`, `Router`, `Firewall`, `AccessPoint`,
+`Ups`, `Desktop`, `Laptop`, `Service`, `System`.
 
 #### Response
 
@@ -161,7 +165,7 @@ curl -X POST http://localhost:8080/api/inventory \
       "version": 3,
       "resources": [
         {
-          "kind": "server",
+          "kind": "Server",
           "name": "web-01",
           "tags": ["homelab"],
           "ram": { "size": 64 }
@@ -183,7 +187,7 @@ curl -X POST http://localhost:8080/api/inventory \
     "json": {
       "version": 3,
       "resources": [
-        { "kind": "server", "name": "web-01", "ram": { "size": 128 } }
+        { "kind": "Server", "name": "web-01", "ram": { "size": 128 } }
       ]
     }
   }'

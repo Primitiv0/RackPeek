@@ -39,9 +39,16 @@ public sealed class LibGit2GitRepository : IGitRepository {
         // config directory so the UI can immediately offer Add Remote — without
         // this, first-time users hit "Git is not available." on every action.
         // Init is idempotent for existing repos (IsValid skips the call) and
-        // does not touch existing files; it only creates .git/.
+        // does not touch existing files; it only creates .git/. Failure (e.g.
+        // a read-only mount) must not throw out of the singleton factory — the
+        // UI relies on IsAvailable=false to render the writability warning.
         if (Directory.Exists(configDirectory) && !Repository.IsValid(configDirectory))
-            Repository.Init(configDirectory);
+            try {
+                Repository.Init(configDirectory);
+            }
+            catch {
+                // Leave IsAvailable=false; surfaced via the writability warning.
+            }
 
         _isAvailable = Repository.IsValid(configDirectory);
         // When insecureTls is true, accept any TLS certificate. Required for
