@@ -1,0 +1,167 @@
+@page "/visualise"
+@page "/visualise/{View}"
+
+@using RackPeek.Domain.Graph.Serialisers
+@using RackPeek.Domain.Graph.UseCases
+@using Shared.Rcl.Components.Graphs
+
+@inject BuildPhysicalTopologyUseCase TopologyUseCase
+@inject BuildLogicalGraphUseCase LogicalUseCase
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<PageTitle>Visualise</PageTitle>
+
+<div class="min-h-screen bg-zinc-950 text-zinc-200 font-mono p-6"
+     data-testid="visualise-page-root">
+
+    <div class="flex items-center justify-between mb-4">
+        <div class="space-y-1">
+            <div class="text-xs text-zinc-500 uppercase tracking-wider">Knowledge Base</div>
+            <h1 class="text-lg text-zinc-100">
+                Visualise
+                <span class="text-zinc-500">:</span>
+                <span class="text-emerald-400">@ActiveTitle</span>
+            </h1>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <nav class="flex items-center gap-1 text-sm">
+                <button class="@TabClass("topology")"
+                        data-testid="visualise-tab-topology"
+                        @onclick="@(() => SelectView("topology"))">
+                    Physical
+                </button>
+                <button class="@TabClass("logical")"
+                        data-testid="visualise-tab-logical"
+                        @onclick="@(() => SelectView("logical"))">
+                    Logical
+                </button>
+            </nav>
+
+            <div class="flex items-center gap-1 text-sm">
+                <button class="@ExportButtonClass"
+                        disabled="@CannotExport"
+                        data-testid="visualise-export-svg"
+                        @onclick="ExportSvgAsync">
+                    Save SVG
+                </button>
+                <button class="@ExportButtonClass"
+                        disabled="@CannotExport"
+                        data-testid="visualise-export-source"
+                        @onclick="ExportSourceAsync">
+                    Save Mermaid
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="text-zinc-500 text-sm">loading inventory…</div>
+    }
+    else if (_error is not null)
+    {
+        <div class="text-red-400 text-sm">@_error</div>
+    }
+    else
+    {
+        <div class="border border-zinc-800 rounded-md bg-zinc-900/30" style="height: 75vh;">
+            <GraphView Source="@_source"
+                       Id="@HostId"
+                       TestId="@($"visualise-graph-{ActiveView}")" />
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? View { get; set; }
+
+    private string ActiveView => string.Equals(View, "logical", StringComparison.OrdinalIgnoreCase)
+        ? "logical"
+        : "topology";
+
+    private string ActiveTitle => ActiveView switch
+    {
+        "logical" => "Logical — services & systems",
+        _ => "Physical — hardware topology"
+    };
+
+    private string? _source;
+    private bool _loading = true;
+    private string? _error;
+    private string? _lastLoadedView;
+
+    private readonly MermaidSerialiser _serialiser = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_lastLoadedView == ActiveView) return;
+        _lastLoadedView = ActiveView;
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            RackPeek.Domain.Graph.Graph graph = ActiveView switch
+            {
+                "logical" => await LogicalUseCase.ExecuteAsync(),
+                _ => await TopologyUseCase.ExecuteAsync()
+            };
+
+            _source = _serialiser.Serialise(graph);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to build graph: {ex.Message}";
+            _source = null;
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void SelectView(string view)
+    {
+        Nav.NavigateTo($"visualise/{view}");
+    }
+
+    private const string HostId = "visualise-graph-host";
+
+    private bool CannotExport => _loading || _source is null;
+
+    private string ExportButtonClass =>
+        "px-3 py-1 rounded border border-zinc-800 text-zinc-400 " +
+        "hover:text-emerald-400 hover:border-zinc-700 disabled:opacity-40 disabled:hover:text-zinc-400";
+
+    private string ExportFilenameBase =>
+        ActiveView == "logical" ? "rackpeek-logical" : "rackpeek-topology";
+
+    private async Task ExportSvgAsync()
+    {
+        if (CannotExport) return;
+        await JS.InvokeVoidAsync(
+            "rackpeekGraph.downloadSvg", HostId, $"{ExportFilenameBase}.svg");
+    }
+
+    private async Task ExportSourceAsync()
+    {
+        if (CannotExport || _source is null) return;
+        await JS.InvokeVoidAsync(
+            "rackpeekGraph.downloadText", _source, $"{ExportFilenameBase}.mmd", "text/plain");
+    }
+
+    private string TabClass(string view) =>
+        ActiveView == view
+            ? "px-3 py-1 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+            : "px-3 py-1 rounded border border-zinc-800 text-zinc-400 hover:text-emerald-400 hover:border-zinc-700";
+}

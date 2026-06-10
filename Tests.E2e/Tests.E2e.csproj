@@ -29,6 +29,12 @@
     </ItemGroup>
 
     <ItemGroup>
+        <None Update="xunit.runner.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\RackPeek.Web.Viewer\RackPeek.Web.Viewer.csproj"/>
         <ProjectReference Include="..\RackPeek.Web\RackPeek.Web.csproj"/>
     </ItemGroup>

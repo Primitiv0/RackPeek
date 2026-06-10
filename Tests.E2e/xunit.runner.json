@@ -1,0 +1,8 @@
+{
+    "$schema": "https://xunit.net/schema/current/xunit.runner.schema.json",
+
+    "_comment": "Each E2E test boots its own Testcontainers container running Blazor Server. Under default parallelism (= CPU count) the host gets overloaded and Blazor's SignalR circuit drops on the slowest containers, producing flaky failures where the new page never finishes rendering (the 'Rejoin failed' reconnect modal appears). Capping concurrency keeps containers responsive.",
+
+    "parallelizeTestCollections": true,
+    "maxParallelThreads": 4
+}

@@ -31,6 +31,7 @@ using Shared.Rcl.Commands.Firewalls;
 using Shared.Rcl.Commands.Firewalls.Labels;
 using Shared.Rcl.Commands.Firewalls.Ports;
 using Shared.Rcl.Commands.Firewalls.Rename;
+using Shared.Rcl.Commands.Graph;
 using Shared.Rcl.Commands.Laptops;
 using Shared.Rcl.Commands.Laptops.Cpus;
 using Shared.Rcl.Commands.Laptops.Drive;
@@ -702,6 +703,19 @@ public static class CliBootstrap {
 
                 hosts.AddCommand<GenerateHostsFileCommand>("export")
                     .WithDescription("Generate a /etc/hosts compatible file.");
+            });
+
+            // ----------------------------
+            // Graph / visualisation
+            // ----------------------------
+            config.AddBranch("graph", graph => {
+                graph.SetDescription("Render inventory as graph diagrams.");
+
+                graph.AddCommand<GraphTopologyCommand>("topology")
+                    .WithDescription("Emit a Mermaid flowchart of the physical topology (hardware + connections).");
+
+                graph.AddCommand<GraphLogicalCommand>("logical")
+                    .WithDescription("Emit a Mermaid flowchart of services & systems grouped by subnet and host.");
             });
 
             // ----------------------------

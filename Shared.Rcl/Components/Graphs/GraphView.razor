@@ -1,0 +1,86 @@
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="bg-zinc-900/40 overflow-auto h-full w-full"
+     data-testid="@(TestId ?? "graph-view")">
+
+    @if (_isRendering)
+    {
+        <div class="text-zinc-500 text-sm p-4">rendering diagram…</div>
+    }
+    else if (_error is not null)
+    {
+        <div class="text-red-400 text-sm p-4 font-mono whitespace-pre-wrap">@_error</div>
+    }
+
+    <div id="@HostId" class="p-2"></div>
+</div>
+
+@code {
+    [Parameter] public string? Source { get; set; }
+    [Parameter] public string? TestId { get; set; }
+
+    /// <summary>
+    ///     The id of the host element holding the rendered SVG. Defaults to a
+    ///     random GUID per instance; pages that need to call SVG-export JS on
+    ///     this view should pass a stable id.
+    /// </summary>
+    [Parameter] public string? Id { get; set; }
+
+    private string HostId => Id ?? _generatedId;
+    private readonly string _generatedId = $"rpkg-host-{Guid.NewGuid():N}";
+    private string? _renderedSource;
+    private bool _isRendering;
+    private string? _error;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Re-render only when the source actually changes — Blazor calls
+        // OnAfterRender on every state change.
+        if (Source == _renderedSource) return;
+        _renderedSource = Source;
+
+        if (string.IsNullOrWhiteSpace(Source))
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("rackpeekGraph.render", HostId, "");
+            }
+            catch
+            {
+                // Ignore — the host may not be ready / the page is unloading.
+            }
+            return;
+        }
+
+        _isRendering = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            await JS.InvokeVoidAsync("rackpeekGraph.render", HostId, Source);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Diagram render failed: {ex.Message}";
+        }
+        finally
+        {
+            _isRendering = false;
+            StateHasChanged();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("rackpeekGraph.render", HostId, "");
+        }
+        catch
+        {
+            // ignore on teardown
+        }
+    }
+}

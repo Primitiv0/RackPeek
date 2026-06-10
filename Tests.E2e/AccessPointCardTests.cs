@@ -393,4 +393,68 @@ public class AccessPointCardTests(
             await context.CloseAsync();
         }
     }
+
+    [Fact]
+    public async Task Connection_Modal_Stores_And_Replays_The_Label() {
+        (IBrowserContext context, IPage page) = await CreatePageAsync();
+
+        var ap1 = $"e2e-ap-{Guid.NewGuid():N}"[..16];
+        var ap2 = $"e2e-ap-{Guid.NewGuid():N}"[..16];
+        var label = $"link-{Guid.NewGuid():N}"[..12];
+
+        try {
+            await page.GotoAsync(_fixture.BaseUrl);
+
+            var layout = new MainLayoutPom(page);
+            await layout.AssertLoadedAsync();
+            await layout.GotoHardwareAsync();
+
+            var hardwareTree = new HardwareTreePom(page);
+            await hardwareTree.AssertLoadedAsync();
+            await hardwareTree.GotoAccessPointsListAsync();
+
+            var list = new AccessPointsListPom(page);
+            await list.AssertLoadedAsync();
+
+            // Two APs each with a port group
+            await list.AddAccessPointAsync(ap1);
+            await page.WaitForURLAsync($"**/resources/hardware/{ap1}");
+            var card = new AccessPointCardPom(page);
+            await card.AssertCardVisibleAsync(ap1);
+            await card.AddPortGroupAsync("rj45", "1", 2);
+
+            await layout.GotoHardwareAsync();
+            await hardwareTree.GotoAccessPointsListAsync();
+            await list.AssertLoadedAsync();
+            await list.AddAccessPointAsync(ap2);
+            await page.WaitForURLAsync($"**/resources/hardware/{ap2}");
+            await card.AssertCardVisibleAsync(ap2);
+            await card.AddPortGroupAsync("sfp+", "2.5", 2);
+
+            // Open AP1 and create a connection with a label
+            await layout.GotoHardwareAsync();
+            await hardwareTree.GotoAccessPointsListAsync();
+            await list.AssertLoadedAsync();
+            await list.OpenAccessPointAsync(ap1);
+            await card.AssertCardVisibleAsync(ap1);
+
+            await card.OpenConnectionFromPortAsync(0, 0);
+            await card.CreateConnectionAsync(
+                ap1, "rj45 — 1 Gbps (2)", "Port 1",
+                ap2, "sfp+ — 2.5 Gbps (2)", "Port 1",
+                label: label);
+
+            // Re-open the modal on the same port — the stored label should
+            // pre-populate the input, proving it round-tripped to the YAML
+            // and back through `GetConnectionForPortAsync`.
+            await card.OpenConnectionFromPortAsync(0, 0);
+
+            await Assertions.Expect(card.ConnectionLabelInput()).ToHaveValueAsync(label);
+
+            await context.CloseAsync();
+        }
+        finally {
+            await context.CloseAsync();
+        }
+    }
 }
