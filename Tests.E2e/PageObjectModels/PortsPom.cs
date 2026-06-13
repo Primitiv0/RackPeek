@@ -74,6 +74,9 @@ public class PortsPom(IPage page) {
     public ILocator SubmitConnection(string testIdPrefix)
         => page.GetByTestId($"{testIdPrefix}-port-group-connection-modal-submit");
 
+    public ILocator LabelInput(string testIdPrefix)
+        => page.GetByTestId($"{testIdPrefix}-port-group-connection-modal-label");
+
     // -------------------------------------------------
     // Assertions
     // -------------------------------------------------
@@ -105,7 +108,8 @@ public class PortsPom(IPage page) {
         string portA,
         string resourceB,
         string groupB,
-        string portB) {
+        string portB,
+        string? label = null) {
         await ResourceASelect(prefix).SelectOptionAsync(
             new SelectOptionValue { Label = resourceA });
 
@@ -123,6 +127,9 @@ public class PortsPom(IPage page) {
 
         await PortBSelect(prefix).SelectOptionAsync(
             new SelectOptionValue { Label = portB });
+
+        if (label is not null)
+            await LabelInput(prefix).FillAsync(label);
 
         await SubmitConnection(prefix).ClickAsync();
     }

@@ -152,6 +152,153 @@ public class SshExportWorkflowTests(
     }
 
     [Fact]
+    public async Task ssh_export_uses_hostname_label_when_no_ip() {
+        // ssh-config-export.md §1 & §9: `hostname` is an accepted address
+        // fallback when `ip` is not set.
+        await File.WriteAllTextAsync(Path.Combine(fs.Root, "config.yaml"), """
+                                                                           version: 1
+                                                                           resources:
+                                                                           - kind: System
+                                                                             type: vm
+                                                                             name: vm-host
+                                                                             labels:
+                                                                               hostname: vm-host.lan
+                                                                           """);
+
+        (var output, var _) = await ExecuteAsync("ssh", "export");
+
+        Assert.Contains("Host vm-host", output);
+        Assert.Contains("HostName vm-host.lan", output);
+    }
+
+    [Fact]
+    public async Task ssh_export_uses_ansible_host_label_when_no_ip_or_hostname() {
+        // ssh-config-export.md §1 & §9: `ansible_host` is the third fallback
+        // for the address.
+        await File.WriteAllTextAsync(Path.Combine(fs.Root, "config.yaml"), """
+                                                                           version: 1
+                                                                           resources:
+                                                                           - kind: System
+                                                                             type: vm
+                                                                             name: vm-ansible
+                                                                             labels:
+                                                                               ansible_host: 10.0.0.99
+                                                                           """);
+
+        (var output, var _) = await ExecuteAsync("ssh", "export");
+
+        Assert.Contains("Host vm-ansible", output);
+        Assert.Contains("HostName 10.0.0.99", output);
+    }
+
+    [Fact]
+    public async Task ssh_export_falls_back_from_ssh_user_to_ansible_user() {
+        // ssh-config-export.md §9 fallback chain: ssh_user → ansible_user →
+        // CLI default. A resource with only `ansible_user` should still
+        // produce a User line.
+        await File.WriteAllTextAsync(Path.Combine(fs.Root, "config.yaml"), """
+                                                                           version: 1
+                                                                           resources:
+                                                                           - kind: System
+                                                                             type: vm
+                                                                             name: vm-prefer
+                                                                             labels:
+                                                                               ip: 10.0.0.1
+                                                                               ssh_user: prefer-this
+                                                                               ansible_user: ignore-this
+
+                                                                           - kind: System
+                                                                             type: vm
+                                                                             name: vm-fallback
+                                                                             labels:
+                                                                               ip: 10.0.0.2
+                                                                               ansible_user: from-ansible
+                                                                           """);
+
+        (var output, var _) = await ExecuteAsync("ssh", "export");
+
+        Assert.Contains("""
+                        Host vm-fallback
+                          HostName 10.0.0.2
+                          User from-ansible
+                        """, output);
+        Assert.Contains("""
+                        Host vm-prefer
+                          HostName 10.0.0.1
+                          User prefer-this
+                        """, output);
+        Assert.DoesNotContain("ignore-this", output);
+    }
+
+    [Fact]
+    public async Task ssh_export_falls_back_from_ssh_port_to_ansible_port() {
+        // ssh-config-export.md §9 fallback chain: ssh_port → ansible_port →
+        // CLI default. Note: the generator omits `Port` if the resolved port
+        // equals 22, so test with a non-default value.
+        await File.WriteAllTextAsync(Path.Combine(fs.Root, "config.yaml"), """
+                                                                           version: 1
+                                                                           resources:
+                                                                           - kind: System
+                                                                             type: vm
+                                                                             name: vm-prefer
+                                                                             labels:
+                                                                               ip: 10.0.0.1
+                                                                               ssh_port: "2200"
+                                                                               ansible_port: "9999"
+
+                                                                           - kind: System
+                                                                             type: vm
+                                                                             name: vm-fallback
+                                                                             labels:
+                                                                               ip: 10.0.0.2
+                                                                               ansible_port: "2222"
+                                                                           """);
+
+        (var output, var _) = await ExecuteAsync("ssh", "export");
+
+        Assert.Contains("""
+                        Host vm-fallback
+                          HostName 10.0.0.2
+                          Port 2222
+                        """, output);
+        Assert.Contains("""
+                        Host vm-prefer
+                          HostName 10.0.0.1
+                          Port 2200
+                        """, output);
+        Assert.DoesNotContain("9999", output);
+    }
+
+    [Fact]
+    public async Task ssh_export_honours_per_resource_ssh_port_and_identity_file_labels() {
+        // ssh-config-export.md §2: per-resource ssh_port and
+        // ssh_identity_file labels are emitted as Port / IdentityFile lines
+        // even when no CLI defaults are passed.
+        await File.WriteAllTextAsync(Path.Combine(fs.Root, "config.yaml"), """
+                                                                           version: 1
+                                                                           resources:
+                                                                           - kind: System
+                                                                             type: vm
+                                                                             name: vm-custom
+                                                                             labels:
+                                                                               ip: 10.0.0.1
+                                                                               ssh_user: ubuntu
+                                                                               ssh_port: "2222"
+                                                                               ssh_identity_file: ~/.ssh/id_custom
+                                                                           """);
+
+        (var output, var _) = await ExecuteAsync("ssh", "export");
+
+        Assert.Contains("""
+                        Host vm-custom
+                          HostName 10.0.0.1
+                          User ubuntu
+                          Port 2222
+                          IdentityFile ~/.ssh/id_custom
+                        """, output);
+    }
+
+    [Fact]
     public async Task ssh_export_skips_resources_without_address() {
         await File.WriteAllTextAsync(Path.Combine(fs.Root, "config.yaml"), """
                                                                            version: 1

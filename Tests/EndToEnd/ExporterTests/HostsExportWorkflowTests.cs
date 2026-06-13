@@ -145,6 +145,82 @@ public class HostsExportWorkflowTests(
     }
 
     [Fact]
+    public async Task hosts_export_uses_hostname_label_when_no_ip() {
+        // hosts-file-export.md §1: the `hostname` label is an alternative
+        // address. A resource with only `hostname` should still appear, with
+        // the hostname taking the address column.
+        await File.WriteAllTextAsync(Path.Combine(fs.Root, "config.yaml"), """
+                                                                           version: 1
+                                                                           resources:
+                                                                           - kind: System
+                                                                             type: vm
+                                                                             name: vm-hostname
+                                                                             labels:
+                                                                               hostname: vm-hostname.lan
+                                                                           """);
+
+        (var output, var _) = await ExecuteAsync(
+            "hosts", "export",
+            "--no-header",
+            "--no-localhost"
+        );
+
+        Assert.Contains("vm-hostname.lan vm-hostname", output);
+    }
+
+    [Fact]
+    public async Task hosts_export_uses_ansible_host_label_when_no_ip_or_hostname() {
+        // hosts-file-export.md §1: "If you already use Ansible, `ansible_host`
+        // also works." A resource with only ansible_host should appear in
+        // the hosts file.
+        await File.WriteAllTextAsync(Path.Combine(fs.Root, "config.yaml"), """
+                                                                           version: 1
+                                                                           resources:
+                                                                           - kind: System
+                                                                             type: vm
+                                                                             name: vm-ansible
+                                                                             labels:
+                                                                               ansible_host: 10.0.0.99
+                                                                           """);
+
+        (var output, var _) = await ExecuteAsync(
+            "hosts", "export",
+            "--no-header",
+            "--no-localhost"
+        );
+
+        Assert.Contains("10.0.0.99 vm-ansible", output);
+    }
+
+    [Fact]
+    public async Task hosts_export_prefers_ip_over_hostname_and_ansible_host() {
+        // hosts-file-export.md implies a precedence: ip is the canonical
+        // address, with hostname/ansible_host only as fallbacks. When all
+        // three are present the `ip` value wins.
+        await File.WriteAllTextAsync(Path.Combine(fs.Root, "config.yaml"), """
+                                                                           version: 1
+                                                                           resources:
+                                                                           - kind: System
+                                                                             type: vm
+                                                                             name: vm-all
+                                                                             labels:
+                                                                               ip: 10.0.0.1
+                                                                               hostname: not-this.lan
+                                                                               ansible_host: 10.0.0.2
+                                                                           """);
+
+        (var output, var _) = await ExecuteAsync(
+            "hosts", "export",
+            "--no-header",
+            "--no-localhost"
+        );
+
+        Assert.Contains("10.0.0.1 vm-all", output);
+        Assert.DoesNotContain("not-this.lan", output);
+        Assert.DoesNotContain("10.0.0.2", output);
+    }
+
+    [Fact]
     public async Task hosts_export_skips_resources_without_address() {
         await File.WriteAllTextAsync(Path.Combine(fs.Root, "config.yaml"), """
                                                                            version: 1

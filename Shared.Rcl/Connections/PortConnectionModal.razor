@@ -154,6 +154,19 @@
 
             </div>
 
+            <div class="mt-6 space-y-1">
+                <label class="text-zinc-400 text-xs uppercase tracking-wider"
+                       for="@($"{BaseTestId}-label-input")">
+                    Label
+                </label>
+                <input id="@($"{BaseTestId}-label-input")"
+                       class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-zinc-100 text-sm"
+                       data-testid="@($"{BaseTestId}-label")"
+                       placeholder="optional — shown on the topology diagram"
+                       maxlength="80"
+                       @bind="_label"/>
+            </div>
+
             <div class="flex justify-end gap-2 mt-6">
 
                 <button class="px-3 py-1 border border-zinc-700 rounded text-zinc-300"
@@ -209,6 +222,8 @@
 
     int? _portAIndex;
     int? _portBIndex;
+
+    string _label = string.Empty;
 
 
     int? _resourceAIndex
@@ -325,7 +340,16 @@
             .ToList();
 
         if (SeedPort != null)
-            SeedSinglePortA(SeedPort);
+        {
+            // If the seed port is already part of a connection, hydrate the
+            // whole modal (side B + label) so the user can see and edit what
+            // they already configured. Otherwise just preselect side A.
+            var existing = await Repository.GetConnectionForPortAsync(SeedPort);
+            if (existing != null)
+                SeedConnection(existing);
+            else
+                SeedSinglePortA(SeedPort);
+        }
     }
 
 
@@ -375,6 +399,7 @@
     {
         SeedSinglePortA(conn.A);
         SeedSinglePortB(conn.B);
+        _label = conn.Label ?? string.Empty;
     }
 
     async Task HandleSubmit()
@@ -395,7 +420,9 @@
             PortIndex = _portBIndex!.Value
         };
 
-        await AddConnectionUseCase.ExecuteAsync(a, b);
+        var trimmedLabel = string.IsNullOrWhiteSpace(_label) ? null : _label.Trim();
+
+        await AddConnectionUseCase.ExecuteAsync(a, b, trimmedLabel);
 
         await Cancel();
     }
@@ -403,6 +430,7 @@
 
     async Task Cancel()
     {
+        _label = string.Empty;
         await IsOpenChanged.InvokeAsync(false);
     }
 

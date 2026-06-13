@@ -75,14 +75,22 @@ docker run -d \
 ## Wiring up the remote
 
 Open RackPeek in the browser. With `GIT_TOKEN` set, a Git status indicator
-appears in the header. Enable Git when prompted, then enter the repository
-remote URL — for example:
+appears in the header. RackPeek initialises a local git repository inside
+the config directory automatically on startup — no extra click required.
+Click **Add Remote** in the indicator and enter the repository URL — for
+example:
 
 * `https://github.com/youruser/rackpeek-config.git`
 * `https://gitea.example.com/youruser/rackpeek-config.git`
 * `https://gitlab.example.com/youruser/rackpeek-config.git`
 
 RackPeek will commit and sync configuration changes from there on.
+
+If the indicator shows **"Git configured but config directory is not
+writable"**, the container can't create the `.git/` folder inside
+`/app/config`. This is almost always a host filesystem permission issue
+on a bind mount — see the [Installation Guide](install-guide) for the
+ownership fix (`chown -R 1000:1000 /path/on/host/rackpeek`).
 
 ## Security notes
 

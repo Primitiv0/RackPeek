@@ -5,6 +5,15 @@ using RackPeek.Domain;
 using RackPeek.Domain.Helpers;
 using RackPeek.Domain.Persistence;
 using RackPeek.Domain.Persistence.Yaml;
+using RackPeek.Domain.Resources.AccessPoints;
+using RackPeek.Domain.Resources.Desktops;
+using RackPeek.Domain.Resources.Firewalls;
+using RackPeek.Domain.Resources.Laptops;
+using RackPeek.Domain.Resources.Routers;
+using RackPeek.Domain.Resources.Servers;
+using RackPeek.Domain.Resources.Services;
+using RackPeek.Domain.Resources.Switches;
+using RackPeek.Domain.Resources.SystemResources;
 using Shared.Rcl.Commands;
 using Shared.Rcl.Commands.AccessPoints;
 using Shared.Rcl.Commands.AccessPoints.Labels;
@@ -22,6 +31,7 @@ using Shared.Rcl.Commands.Firewalls;
 using Shared.Rcl.Commands.Firewalls.Labels;
 using Shared.Rcl.Commands.Firewalls.Ports;
 using Shared.Rcl.Commands.Firewalls.Rename;
+using Shared.Rcl.Commands.Graph;
 using Shared.Rcl.Commands.Laptops;
 using Shared.Rcl.Commands.Laptops.Cpus;
 using Shared.Rcl.Commands.Laptops.Drive;
@@ -49,6 +59,7 @@ using Shared.Rcl.Commands.Switches.Rename;
 using Shared.Rcl.Commands.Systems;
 using Shared.Rcl.Commands.Systems.Labels;
 using Shared.Rcl.Commands.Systems.Rename;
+using Shared.Rcl.Commands.Tags;
 using Shared.Rcl.Commands.Ups;
 using Shared.Rcl.Commands.Ups.Labels;
 using Shared.Rcl.Commands.Ups.Rename;
@@ -204,6 +215,13 @@ public static class CliBootstrap {
                     label.AddCommand<ServerLabelRemoveCommand>("remove")
                         .WithDescription("Remove a label from a server.");
                 });
+
+                // Server Tags
+                server.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on a server.");
+                    tag.AddCommand<TagAddCommand<Server>>("add").WithDescription("Add a tag to a server.");
+                    tag.AddCommand<TagRemoveCommand<Server>>("remove").WithDescription("Remove a tag from a server.");
+                });
             });
 
             // ----------------------------
@@ -248,6 +266,12 @@ public static class CliBootstrap {
                     label.AddCommand<SwitchLabelAddCommand>("add").WithDescription("Add a label to a switch.");
                     label.AddCommand<SwitchLabelRemoveCommand>("remove")
                         .WithDescription("Remove a label from a switch.");
+                });
+
+                switches.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on a switch.");
+                    tag.AddCommand<TagAddCommand<Switch>>("add").WithDescription("Add a tag to a switch.");
+                    tag.AddCommand<TagRemoveCommand<Switch>>("remove").WithDescription("Remove a tag from a switch.");
                 });
             });
 
@@ -294,6 +318,12 @@ public static class CliBootstrap {
                     label.AddCommand<RouterLabelRemoveCommand>("remove")
                         .WithDescription("Remove a label from a router.");
                 });
+
+                routers.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on a router.");
+                    tag.AddCommand<TagAddCommand<Router>>("add").WithDescription("Add a tag to a router.");
+                    tag.AddCommand<TagRemoveCommand<Router>>("remove").WithDescription("Remove a tag from a router.");
+                });
             });
 
             // ----------------------------
@@ -339,6 +369,13 @@ public static class CliBootstrap {
                     label.AddCommand<FirewallLabelRemoveCommand>("remove")
                         .WithDescription("Remove a label from a firewall.");
                 });
+
+                firewalls.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on a firewall.");
+                    tag.AddCommand<TagAddCommand<Firewall>>("add").WithDescription("Add a tag to a firewall.");
+                    tag.AddCommand<TagRemoveCommand<Firewall>>("remove")
+                        .WithDescription("Remove a tag from a firewall.");
+                });
             });
 
             // ----------------------------
@@ -375,6 +412,13 @@ public static class CliBootstrap {
                     label.AddCommand<SystemLabelRemoveCommand>("remove")
                         .WithDescription("Remove a label from a system.");
                 });
+
+                system.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on a system.");
+                    tag.AddCommand<TagAddCommand<SystemResource>>("add").WithDescription("Add a tag to a system.");
+                    tag.AddCommand<TagRemoveCommand<SystemResource>>("remove")
+                        .WithDescription("Remove a tag from a system.");
+                });
             });
 
             // ----------------------------
@@ -409,6 +453,14 @@ public static class CliBootstrap {
                     label.AddCommand<AccessPointLabelRemoveCommand>("remove")
                         .WithDescription("Remove a label from an access point.");
                 });
+
+                ap.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on an access point.");
+                    tag.AddCommand<TagAddCommand<AccessPoint>>("add")
+                        .WithDescription("Add a tag to an access point.");
+                    tag.AddCommand<TagRemoveCommand<AccessPoint>>("remove")
+                        .WithDescription("Remove a tag from an access point.");
+                });
             });
 
             // ----------------------------
@@ -441,6 +493,14 @@ public static class CliBootstrap {
                     label.AddCommand<UpsLabelAddCommand>("add").WithDescription("Add a label to a UPS unit.");
                     label.AddCommand<UpsLabelRemoveCommand>("remove")
                         .WithDescription("Remove a label from a UPS unit.");
+                });
+
+                ups.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on a UPS unit.");
+                    tag.AddCommand<TagAddCommand<RackPeek.Domain.Resources.UpsUnits.Ups>>("add")
+                        .WithDescription("Add a tag to a UPS unit.");
+                    tag.AddCommand<TagRemoveCommand<RackPeek.Domain.Resources.UpsUnits.Ups>>("remove")
+                        .WithDescription("Remove a tag from a UPS unit.");
                 });
             });
 
@@ -507,6 +567,13 @@ public static class CliBootstrap {
                     label.AddCommand<DesktopLabelRemoveCommand>("remove")
                         .WithDescription("Remove a label from a desktop.");
                 });
+
+                desktops.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on a desktop.");
+                    tag.AddCommand<TagAddCommand<Desktop>>("add").WithDescription("Add a tag to a desktop.");
+                    tag.AddCommand<TagRemoveCommand<Desktop>>("remove")
+                        .WithDescription("Remove a tag from a desktop.");
+                });
             });
 
             // ----------------------------
@@ -562,6 +629,13 @@ public static class CliBootstrap {
                     label.AddCommand<LaptopLabelRemoveCommand>("remove")
                         .WithDescription("Remove a label from a laptop.");
                 });
+
+                laptops.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on a laptop.");
+                    tag.AddCommand<TagAddCommand<Laptop>>("add").WithDescription("Add a tag to a laptop.");
+                    tag.AddCommand<TagRemoveCommand<Laptop>>("remove")
+                        .WithDescription("Remove a tag from a laptop.");
+                });
             });
 
             // ----------------------------
@@ -598,6 +672,13 @@ public static class CliBootstrap {
                     label.AddCommand<ServiceLabelRemoveCommand>("remove")
                         .WithDescription("Remove a label from a service.");
                 });
+
+                service.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on a service.");
+                    tag.AddCommand<TagAddCommand<Service>>("add").WithDescription("Add a tag to a service.");
+                    tag.AddCommand<TagRemoveCommand<Service>>("remove")
+                        .WithDescription("Remove a tag from a service.");
+                });
             });
 
             // ----------------------------
@@ -622,6 +703,32 @@ public static class CliBootstrap {
 
                 hosts.AddCommand<GenerateHostsFileCommand>("export")
                     .WithDescription("Generate a /etc/hosts compatible file.");
+            });
+
+            // ----------------------------
+            // Graph / visualisation
+            // ----------------------------
+            config.AddBranch("graph", graph => {
+                graph.SetDescription("Render inventory as graph diagrams.");
+
+                graph.AddCommand<GraphTopologyCommand>("topology")
+                    .WithDescription("Emit a Mermaid flowchart of the physical topology (hardware + connections).");
+
+                graph.AddCommand<GraphLogicalCommand>("logical")
+                    .WithDescription("Emit a Mermaid flowchart of services & systems grouped by subnet and host.");
+            });
+
+            // ----------------------------
+            // Tags discovery
+            // ----------------------------
+            config.AddBranch("tags", tags => {
+                tags.SetDescription("Discover tags across resources.");
+
+                tags.AddCommand<TagsListCommand>("list")
+                    .WithDescription("List all tags in use with usage counts.");
+
+                tags.AddCommand<TagsShowCommand>("show")
+                    .WithDescription("List resources carrying a specific tag.");
             });
 
             config.AddBranch("connections", connections => {
