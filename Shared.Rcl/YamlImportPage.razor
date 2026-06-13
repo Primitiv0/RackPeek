@@ -1,6 +1,9 @@
 ﻿@page "/yaml/import"
+@using System.ComponentModel.DataAnnotations
+@using System.Text
 @using RackPeek.Domain.Api
 @using RackPeek.Domain.Persistence
+@using YamlDotNet.Core
 <PageTitle>Yaml Import</PageTitle>
 
 @inject UpsertInventoryUseCase ImportUseCase
@@ -53,10 +56,39 @@
               @bind:after="ComputeDiff">
     </textarea>
 
-    @if (!string.IsNullOrEmpty(_validationError))
+    @if (_error is not null)
     {
-        <div class="text-red-400 text-xs mb-3">
-            @_validationError
+        <div class="border border-red-500/40 bg-red-500/10 rounded p-3 mb-3"
+             data-testid="yaml-import-error"
+             role="alert">
+
+            <div class="flex items-start gap-2">
+                <!-- alert icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0 text-red-400 mt-0.5"
+                     fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+                </svg>
+
+                <div class="min-w-0 flex-1">
+                    <div class="text-red-400 text-sm font-semibold">
+                        @_error.Headline
+                    </div>
+
+                    @if (_error.Line is long line)
+                    {
+                        <div class="text-zinc-400 text-xs mt-1">
+                            Line @line@(_error.Column is long col ? $", column {col}" : "")
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(_error.Snippet))
+                    {
+                        <pre class="mt-2 p-2 rounded bg-zinc-950 border border-zinc-800 text-xs overflow-x-auto text-zinc-300"
+                             data-testid="yaml-import-error-snippet">@_error.Snippet</pre>
+                    }
+                </div>
+            </div>
         </div>
     }
 
@@ -177,7 +209,7 @@
     private Dictionary<string, string> _newYaml = new(StringComparer.OrdinalIgnoreCase);
 
     private string _inputYaml = "";
-    private string? _validationError;
+    private ImportError? _error;
     private bool _isValid;
 
     private MergeMode _mode = MergeMode.Merge;
@@ -190,7 +222,7 @@
 
     async Task ComputeDiff()
     {
-        _validationError = null;
+        _error = null;
         _isValid = false;
 
         _added.Clear();
@@ -222,7 +254,7 @@
         }
         catch (Exception ex)
         {
-            _validationError = $"YAML invalid: {ex.Message}";
+            _error = BuildError(ex, headlinePrefix: "YAML invalid");
         }
     }
 
@@ -249,8 +281,77 @@
         }
         catch (Exception ex)
         {
-            _validationError = $"Apply failed: {ex.Message}";
+            _error = BuildError(ex, headlinePrefix: "Apply failed");
         }
     }
+
+    private ImportError BuildError(Exception ex, string headlinePrefix)
+    {
+        // YamlDotNet wraps the underlying parser error; walk InnerExceptions
+        // to find the YamlException so we can extract Line/Column for the
+        // user.
+        YamlException? yamlEx = FindYamlException(ex);
+        if (yamlEx is not null)
+        {
+            long? line = yamlEx.Start.Line > 0 ? yamlEx.Start.Line : null;
+            long? col = yamlEx.Start.Column > 0 ? yamlEx.Start.Column : null;
+            return new ImportError(
+                $"{headlinePrefix}: {FirstLine(yamlEx.Message)}",
+                line,
+                col,
+                line is long l ? ExtractSnippet(_inputYaml, (int)l) : null);
+        }
+
+        // Domain validation errors (duplicate names, missing version, etc.)
+        // are already user-friendly — just surface them prominently.
+        if (ex is ValidationException ve)
+            return new ImportError(ve.Message, null, null, null);
+
+        return new ImportError($"{headlinePrefix}: {FirstLine(ex.Message)}", null, null, null);
+    }
+
+    private static YamlException? FindYamlException(Exception? ex)
+    {
+        while (ex is not null)
+        {
+            if (ex is YamlException ye) return ye;
+            ex = ex.InnerException;
+        }
+
+        return null;
+    }
+
+    private static string FirstLine(string message)
+    {
+        if (string.IsNullOrEmpty(message)) return string.Empty;
+        var nl = message.IndexOf('\n');
+        return nl < 0 ? message.Trim() : message[..nl].Trim();
+    }
+
+    private static string ExtractSnippet(string yaml, int lineNumber, int context = 2)
+    {
+        // Render `context` lines before and after the offending line, prefix
+        // each with its 1-based line number, and mark the bad line with an
+        // arrow so the eye lands on it instantly.
+        var lines = yaml.Replace("\r\n", "\n").Split('\n');
+        if (lineNumber < 1 || lineNumber > lines.Length) return string.Empty;
+
+        var start = Math.Max(1, lineNumber - context);
+        var end = Math.Min(lines.Length, lineNumber + context);
+
+        var sb = new StringBuilder();
+        for (int i = start; i <= end; i++)
+        {
+            sb.Append(i == lineNumber ? "→ " : "  ")
+                .Append(i.ToString().PadLeft(4))
+                .Append("  ")
+                .Append(lines[i - 1]);
+            if (i < end) sb.Append('\n');
+        }
+
+        return sb.ToString();
+    }
+
+    private sealed record ImportError(string Headline, long? Line, long? Column, string? Snippet);
 
 }

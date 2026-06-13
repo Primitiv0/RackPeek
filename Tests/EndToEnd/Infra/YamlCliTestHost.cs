@@ -39,8 +39,20 @@ public static class YamlCliTestHost {
 
         CliBootstrap.BuildApp(app);
 
-        await app.RunAsync(args);
+        // Some commands deliberately bypass Spectre and write raw to
+        // System.Console.Out (e.g. `graph topology`, which must emit
+        // unwrapped Mermaid). Capture that too so tests see the full output.
+        TextWriter originalOut = Console.Out;
+        var rawCapture = new StringWriter();
+        Console.SetOut(rawCapture);
 
-        return console.Output;
+        try {
+            await app.RunAsync(args);
+        }
+        finally {
+            Console.SetOut(originalOut);
+        }
+
+        return console.Output + rawCapture.ToString();
     }
 }

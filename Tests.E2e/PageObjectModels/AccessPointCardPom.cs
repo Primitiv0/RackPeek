@@ -178,7 +178,8 @@ public class AccessPointCardPom(IPage page) {
         string portA,
         string resourceB,
         string groupB,
-        string portB) {
+        string portB,
+        string? label = null) {
         await Ports.CreateConnectionAsync(
             _portsPrefix,
             resourceA,
@@ -186,6 +187,9 @@ public class AccessPointCardPom(IPage page) {
             portA,
             resourceB,
             groupB,
-            portB);
+            portB,
+            label);
     }
+
+    public ILocator ConnectionLabelInput() => Ports.LabelInput(_portsPrefix);
 }

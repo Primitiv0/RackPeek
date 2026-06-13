@@ -43,7 +43,14 @@
         </button>
     }
 
-    @if (!_hasRemote)
+    @if (_status == GitRepoStatus.NotAvailable)
+    {
+        <span class="flex items-center gap-1 text-amber-400" data-testid="git-unavailable">
+            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+            Git configured but config directory is not writable
+        </span>
+    }
+    else if (!_hasRemote)
     {
         <span class="text-zinc-600">·</span>
 
