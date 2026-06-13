@@ -26,7 +26,11 @@
                 return;
             }
             const script = document.createElement("script");
-            script.src = "/_content/Shared.Rcl/js/graph/mermaid.min.js";
+            // Resolve against <base href> so the script works both at the root
+            // (Server, /) and under a subpath (GitHub Pages WASM, /RackPeek/).
+            script.src = new URL(
+                "_content/Shared.Rcl/js/graph/mermaid.min.js",
+                document.baseURI).href;
             script.async = true;
             script.onload = () => resolve();
             script.onerror = () => reject(new Error("Failed to load mermaid.min.js"));
@@ -48,8 +52,14 @@
 
             // Register the ELK layout loader. Mermaid 11 dispatches by the
             // `layout` config key; "elk" maps to the layered algorithm.
+            // Resolve against <base href> for the same reason loadMermaidScript
+            // does — dynamic import() in a classic script resolves relative to
+            // the document base, not the script URL.
             try {
-                const elk = await import("./mermaid-layout-elk.min.mjs");
+                const elkUrl = new URL(
+                    "_content/Shared.Rcl/js/graph/mermaid-layout-elk.min.mjs",
+                    document.baseURI).href;
+                const elk = await import(elkUrl);
                 window.mermaid.registerLayoutLoaders(elk.default);
             } catch (e) {
                 // Fall back silently to the default dagre layout — still
