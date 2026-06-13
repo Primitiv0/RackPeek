@@ -20,6 +20,12 @@ public sealed class MermaidSerialiser {
     private const string _groupText = "#a1a1aa";   // zinc-400
     private const string _nodeClass = "rpknode";
     private const string _groupClass = "rpkgroup";
+    private const string _smallRowClass = "rpkrow";
+
+    // Compact-mode (logical view) tuning. Small-row size controls how many
+    // single-service host cards pack into one invisible row before wrapping.
+    private const int _compactSmallRowSize = 4;
+    private const int _compactTableColumns = 3;
 
     // Mermaid node shape per resource kind. Shape choice borrows from the
     // network-diagram conventions used by NetBox/draw.io/UniFi: hexagons for
@@ -50,6 +56,9 @@ public sealed class MermaidSerialiser {
     private static readonly Shape _fallbackShape = new("[\"", "\"]");
 
     public string Serialise(Graph graph, string direction = "TD") {
+        if (graph.RenderHint == GraphRenderHint.Compact)
+            return SerialiseCompact(graph, direction);
+
         var sb = new StringBuilder();
 
         // Right-angle (Manhattan) edge routing — the visual signal that says
@@ -66,8 +75,19 @@ public sealed class MermaidSerialiser {
         //
         // Spacing values are generous on purpose — homelab diagrams read
         // better with air around nodes and between subnet/host clusters.
+        // - `layout: elk`              : use the Mermaid 11 ELK plugin (the
+        //                                older `flowchart.defaultRenderer`
+        //                                still works but is the legacy path).
+        // - `elk.aspectRatio: 0.5`     : ask ELK to favour tall over wide so
+        //                                a host with dozens of services
+        //                                doesn't fan out into a single row
+        //                                kilometres long.
+        // - `layered.wrapping.strategy : MULTI_EDGE
+        //                                wraps an overlong layer into several
+        //                                shorter ones — exactly what large
+        //                                logical/service diagrams need.
         sb.AppendLine(
-            "%%{init: {'flowchart': {'defaultRenderer': 'elk', 'curve': 'step', 'nodeSpacing': 60, 'rankSpacing': 80, 'padding': 20, 'subGraphTitleMargin': {'top': 12, 'bottom': 12}}, 'themeVariables': {'edgeLabelBackground': 'transparent', 'clusterBkg': 'transparent', 'clusterBorder': '" + _groupStroke + "'}}}%%");
+            "%%{init: {'layout': 'elk', 'flowchart': {'curve': 'step', 'nodeSpacing': 60, 'rankSpacing': 80, 'padding': 20, 'subGraphTitleMargin': {'top': 12, 'bottom': 12}}, 'elk': {'algorithm': 'layered', 'aspectRatio': 0.5, 'layered.wrapping.strategy': 'MULTI_EDGE', 'layered.nodePlacement.strategy': 'BRANDES_KOEPF'}, 'themeVariables': {'edgeLabelBackground': 'transparent', 'clusterBkg': 'transparent', 'clusterBorder': '" + _groupStroke + "'}}}%%");
         sb.Append("flowchart ").AppendLine(direction);
 
         EmitClassDefs(sb);
@@ -259,4 +279,187 @@ public sealed class MermaidSerialiser {
         _directionalEdgeKinds.Contains(kind);
 
     private readonly record struct Shape(string Open, string Close);
+
+    // ---------------------------------------------------------------------
+    // Compact mode (logical view): each system becomes a single "host card"
+    // whose label is an HTML table of its services. No edges are drawn —
+    // subgraph containment carries the runs-on relationship. Sibling cards
+    // are chained vertically via invisible ~~~ links so ELK doesn't fan
+    // them out into a kilometre-wide row, and single-row hosts are packed
+    // into invisible row subgraphs of N to use the horizontal space.
+    // ---------------------------------------------------------------------
+    private string SerialiseCompact(Graph graph, string direction) {
+        var sb = new StringBuilder();
+
+        // htmlLabels + securityLevel: 'loose' let us put raw HTML inside the
+        // node labels. aspectRatio is set above 0.5 because compact mode
+        // already wraps long sibling lists itself via the small-row packing.
+        sb.AppendLine(
+            "%%{init: {'layout': 'elk', 'flowchart': {'curve': 'step', 'nodeSpacing': 10, 'rankSpacing': 10, 'padding': 0, 'htmlLabels': true, 'subGraphTitleMargin': {'top': 0, 'bottom': 0}, 'titleTopMargin': 0}, 'securityLevel': 'loose', 'elk': {'algorithm': 'layered', 'padding': '[top=0,bottom=4,left=6,right=6]', 'spacing.nodeNode': 8, 'spacing.nodeNodeBetweenLayers': 8, 'spacing.componentComponent': 6, 'layered.spacing.nodeNodeBetweenLayers': 8, 'nodeLabels.placement': '[H_CENTER, V_TOP, INSIDE]'}, 'themeVariables': {'edgeLabelBackground': 'transparent', 'clusterBkg': 'transparent', 'clusterBorder': '" + _groupStroke + "'}}}%%");
+        sb.Append("flowchart ").AppendLine(direction);
+
+        EmitClassDefs(sb);
+        sb.Append("    classDef ").Append(_smallRowClass)
+            .AppendLine(" fill:none,stroke:none,color:transparent");
+        sb.AppendLine();
+
+        Dictionary<string, string> idMap = AssignSafeIds(graph.Nodes);
+
+        IReadOnlyList<GraphGroup> groups = graph.Groups ?? [];
+        var childGroups = groups
+            .GroupBy(g => g.ParentGroupId ?? string.Empty)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        HashSet<string> groupedNodeIds = new(
+            groups.SelectMany(g => g.NodeIds), StringComparer.OrdinalIgnoreCase);
+
+        // Invisible chains and packed-row ids are collected during traversal
+        // and emitted in a block at the end.
+        var chains = new List<IReadOnlyList<string>>();
+        var smallRowIds = new List<string>();
+
+        void Emit(GraphGroup group, int indent) {
+            var pad = new string(' ', indent * 4);
+            sb.Append(pad).Append("subgraph ").Append(group.Id)
+                .Append(" [\"").Append(Escape(group.Label)).Append("\"]").AppendLine();
+
+            List<GraphGroup> subChildren =
+                childGroups.TryGetValue(group.Id, out List<GraphGroup>? cs) ? cs : new();
+            foreach (GraphGroup child in subChildren) Emit(child, indent + 1);
+            if (subChildren.Count > 1)
+                chains.Add(subChildren.Select(c => c.Id).ToList());
+
+            HashSet<string> nodesInChildren = new(
+                subChildren.SelectMany(c => CollectAllNodeIds(c, childGroups)),
+                StringComparer.OrdinalIgnoreCase);
+
+            // Partition the group's direct nodes into "big" cards (host with
+            // multiple service rows) and "small" cards (no rows or one row).
+            // Bigs get a dedicated row each; smalls pack horizontally.
+            var bigs = new List<GraphNode>();
+            var smalls = new List<GraphNode>();
+            foreach (var nodeId in group.NodeIds) {
+                if (nodesInChildren.Contains(nodeId)) continue;
+                GraphNode? node = graph.Nodes.FirstOrDefault(n =>
+                    string.Equals(n.Id, nodeId, StringComparison.OrdinalIgnoreCase));
+                if (node is null) continue;
+                if ((node.Rows?.Count ?? 0) > 1) bigs.Add(node);
+                else smalls.Add(node);
+            }
+
+            var verticalChain = new List<string>();
+
+            foreach (GraphNode b in bigs) {
+                EmitCompactNode(sb, b, idMap, indent + 1);
+                verticalChain.Add(idMap[b.Id]);
+            }
+
+            for (int i = 0, rowIdx = 0; i < smalls.Count; i += _compactSmallRowSize, rowIdx++) {
+                var slice = smalls.Skip(i).Take(_compactSmallRowSize).ToList();
+                // Single small host doesn't need an invisible row wrapper —
+                // wrapping adds another nested subgraph (with its own
+                // padding/title overhead) for no layout benefit.
+                if (slice.Count == 1) {
+                    EmitCompactNode(sb, slice[0], idMap, indent + 1);
+                    verticalChain.Add(idMap[slice[0].Id]);
+                    continue;
+                }
+                var rowId = group.Id + "__srow" + rowIdx;
+                smallRowIds.Add(rowId);
+                verticalChain.Add(rowId);
+                sb.Append(pad).Append("    subgraph ").Append(rowId).AppendLine(" [\" \"]");
+                sb.Append(pad).Append("        direction LR").AppendLine();
+                foreach (GraphNode s in slice)
+                    EmitCompactNode(sb, s, idMap, indent + 2);
+                sb.Append(pad).AppendLine("    end");
+                sb.Append(pad).Append("    ");
+                sb.AppendJoin(" ~~~ ", slice.Select(s => idMap[s.Id]));
+                sb.AppendLine();
+            }
+
+            if (verticalChain.Count > 1) chains.Add(verticalChain);
+
+            sb.Append(pad).AppendLine("end");
+        }
+
+        if (childGroups.TryGetValue(string.Empty, out List<GraphGroup>? topLevel)) {
+            foreach (GraphGroup g in topLevel) Emit(g, 1);
+            if (topLevel.Count > 1)
+                chains.Add(topLevel.Select(g => g.Id).ToList());
+        }
+
+        // Ungrouped nodes (uncommon in compact mode but render them sanely).
+        foreach (GraphNode node in graph.Nodes) {
+            if (groupedNodeIds.Contains(node.Id)) continue;
+            EmitCompactNode(sb, node, idMap, 1);
+        }
+
+        // Invisible vertical chains last — these are what tell ELK to stack
+        // siblings vertically instead of flowing into one long row.
+        if (chains.Count > 0) sb.AppendLine();
+        foreach (IReadOnlyList<string> chain in chains) {
+            if (chain.Count < 2) continue;
+            sb.Append("    ");
+            sb.AppendJoin(" ~~~ ", chain);
+            sb.AppendLine();
+        }
+
+        sb.AppendLine();
+        foreach (GraphGroup group in groups)
+            sb.Append("    class ").Append(group.Id).Append(' ').Append(_groupClass).AppendLine();
+        foreach (var rowId in smallRowIds)
+            sb.Append("    class ").Append(rowId).Append(' ').Append(_smallRowClass).AppendLine();
+
+        return sb.ToString();
+    }
+
+    private void EmitCompactNode(StringBuilder sb, GraphNode node, Dictionary<string, string> idMap, int indent) {
+        var safeId = idMap[node.Id];
+        Shape shape = ResolveShape(node.Kind);
+        var label = BuildCompactLabel(node);
+        sb.Append(new string(' ', indent * 4)).Append(safeId)
+            .Append(shape.Open).Append(label).Append(shape.Close)
+            .Append(":::").Append(_nodeClass)
+            .AppendLine();
+    }
+
+    private static string BuildCompactLabel(GraphNode node) {
+        var sb = new StringBuilder();
+        sb.Append("<div style='text-align:left;font-family:system-ui;padding:4px 6px'>");
+        sb.Append("<div style='font-weight:600;font-size:14px'>");
+        sb.Append(EscapeHtml(node.Label));
+        if (!string.IsNullOrWhiteSpace(node.Subtitle)) {
+            sb.Append(" - <span style='color:#9ca3af'>");
+            sb.Append(EscapeHtml(node.Subtitle!));
+            sb.Append("</span>");
+        }
+        sb.Append("</div>");
+
+        if (node.Rows is { Count: > 0 }) {
+            sb.Append("<hr style='border:none;border-top:1px dashed #52525b;margin:6px 0'>");
+            sb.Append("<table style='border-collapse:collapse;font-size:11px'>");
+            for (var i = 0; i < node.Rows.Count; i += _compactTableColumns) {
+                sb.Append("<tr>");
+                for (var c = 0; c < _compactTableColumns; c++) {
+                    var idx = i + c;
+                    if (idx >= node.Rows.Count) { sb.Append("<td></td>"); continue; }
+                    GraphNodeRow row = node.Rows[idx];
+                    sb.Append("<td style='padding:2px 10px 2px 0;white-space:nowrap'>");
+                    sb.Append("<span style='color:#e5e7eb'>").Append(EscapeHtml(row.Name)).Append("</span>");
+                    if (!string.IsNullOrEmpty(row.Detail))
+                        sb.Append("<span style='color:#71717a'>").Append(EscapeHtml(row.Detail!)).Append("</span>");
+                    sb.Append("</td>");
+                }
+                sb.Append("</tr>");
+            }
+            sb.Append("</table>");
+        }
+        sb.Append("</div>");
+        // Mermaid label is wrapped in "...", so any " in our HTML must be
+        // entity-encoded. We avoid literal " in inline styles by using
+        // single quotes; this last pass catches anything still embedded.
+        return sb.ToString().Replace("\"", "&quot;");
+    }
+
+    private static string EscapeHtml(string s) =>
+        s.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
 }

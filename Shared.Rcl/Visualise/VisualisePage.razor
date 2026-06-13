@@ -42,9 +42,9 @@
             <div class="flex items-center gap-1 text-sm">
                 <button class="@ExportButtonClass"
                         disabled="@CannotExport"
-                        data-testid="visualise-export-svg"
-                        @onclick="ExportSvgAsync">
-                    Save SVG
+                        data-testid="visualise-export-png"
+                        @onclick="ExportPngAsync">
+                    Save PNG
                 </button>
                 <button class="@ExportButtonClass"
                         disabled="@CannotExport"
@@ -146,12 +146,14 @@
     private string ExportFilenameBase =>
         ActiveView == "logical" ? "rackpeek-logical" : "rackpeek-topology";
 
-    private async Task ExportSvgAsync()
+    private async Task ExportPngAsync()
     {
         if (CannotExport) return;
         await JS.InvokeVoidAsync(
-            "rackpeekGraph.downloadSvg", HostId, $"{ExportFilenameBase}.svg");
+            "rackpeekGraph.downloadPng", HostId, $"{ExportFilenameBase}.png", ExportBackground, 2);
     }
+
+    private const string ExportBackground = "#09090b";
 
     private async Task ExportSourceAsync()
     {

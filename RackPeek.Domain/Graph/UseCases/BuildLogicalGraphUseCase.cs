@@ -8,9 +8,11 @@ using RackPeek.Domain.Resources.SystemResources;
 namespace RackPeek.Domain.Graph.UseCases;
 
 /// <summary>
-///     Logical / service-oriented view: services and systems grouped first
-///     by IP subnet (/24), then by their ultimate parent hardware. Edges
-///     show the immediate <c>runsOn</c> dependency.
+///     Logical / service-oriented view. Each system (hypervisor, VM, LXC,
+///     container) becomes a single "host card" whose body lists every
+///     service running on it. Cards are grouped subnet → hardware. No edges
+///     are emitted — containment alone conveys "runs on", and the
+///     serialiser stacks siblings vertically via invisible links.
 /// </summary>
 public class BuildLogicalGraphUseCase(IResourceCollection repo) : IUseCase {
     private const int _defaultPrefix = 24;
@@ -25,63 +27,76 @@ public class BuildLogicalGraphUseCase(IResourceCollection repo) : IUseCase {
         foreach (SystemResource s in systems) byName[s.Name] = s;
         foreach (Service svc in services) byName[svc.Name] = svc;
 
-        // Classify each non-hardware resource: which subnet, which parent host,
-        // and what ip[:port] to show as the subtitle.
-        var entries = new List<Entry>();
-        foreach (Resource resource in services.Cast<Resource>().Concat(systems)) {
-            var ip = FindIp(resource, byName);
-            var subnet = SubnetCidr(ip, _defaultPrefix);
-            Hardware? parentHw = FindParentHardware(resource, byName);
-            if (subnet is null) continue; // skip orphans with no IP anywhere up the chain
-            var subtitle = BuildSubtitle(resource, ip);
-            entries.Add(new Entry(resource, subnet, parentHw?.Name, subtitle));
+        // Group services by the system they ultimately run on. We resolve
+        // the immediate runsOn first — that's the host the service was
+        // declared against. Services whose immediate runsOn isn't a known
+        // system (e.g. it points at hardware or is missing) are dropped from
+        // the compact view since they have no host card to live inside.
+        var servicesByHost = new Dictionary<string, List<Service>>(StringComparer.OrdinalIgnoreCase);
+        foreach (Service service in services) {
+            var parent = service.RunsOn.FirstOrDefault();
+            if (parent is null) continue;
+            if (!byName.TryGetValue(parent, out Resource? parentResource)) continue;
+            if (parentResource is not SystemResource) continue;
+            if (!servicesByHost.TryGetValue(parent, out List<Service>? list))
+                servicesByHost[parent] = list = new List<Service>();
+            list.Add(service);
         }
 
-        var nodes = entries
+        // Each system becomes a host card. Hosts without services still
+        // appear as a labelled card (e.g. a hypervisor that only contains
+        // VMs has no services running directly on it, but is still a
+        // meaningful logical entity).
+        var hostEntries = new List<HostEntry>();
+        foreach (SystemResource sys in systems) {
+            var ip = FindIp(sys, byName);
+            var subnet = SubnetCidr(ip, _defaultPrefix);
+            if (subnet is null) continue;
+            Hardware? parentHw = FindParentHardware(sys, byName);
+            servicesByHost.TryGetValue(sys.Name, out List<Service>? hostServices);
+            var rows = (hostServices ?? new List<Service>())
+                .OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(s => new GraphNodeRow(s.Name, ServiceDetail(s)))
+                .ToList();
+            hostEntries.Add(new HostEntry(sys, subnet, parentHw?.Name, ip, rows));
+        }
+
+        var nodes = hostEntries
             .OrderBy(e => e.Subnet, StringComparer.Ordinal)
             .ThenBy(e => e.HardwareName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(e => e.Resource.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenByDescending(e => e.Rows.Count) // big cards first within a hardware bucket
+            .ThenBy(e => e.System.Name, StringComparer.OrdinalIgnoreCase)
             .Select(e => new GraphNode(
-                e.Resource.Name, e.Resource.Name, NodeKind(e.Resource), e.Subtitle))
+                e.System.Name,
+                e.System.Name,
+                NodeKind(e.System),
+                e.Ip,
+                Rows: e.Rows.Count > 0 ? e.Rows : null))
             .ToList();
 
-        List<GraphGroup> groups = BuildGroups(entries);
+        List<GraphGroup> groups = BuildGroups(hostEntries);
 
-        // Edges from each resource to its immediate runsOn target if both
-        // ends are nodes in the graph. We omit edges that point at hardware
-        // (hardware is the grouping label, not a node).
-        HashSet<string> nodeIds = new(nodes.Select(n => n.Id), StringComparer.OrdinalIgnoreCase);
-        List<GraphEdge> edges = new();
-        foreach (Entry entry in entries) {
-            var parentName = entry.Resource.RunsOn?.FirstOrDefault();
-            if (parentName is null) continue;
-            if (!nodeIds.Contains(parentName)) continue;
-            edges.Add(new GraphEdge(entry.Resource.Name, parentName, null, "runsOn"));
-        }
-
-        return new Graph(nodes, edges, groups);
+        return new Graph(nodes, [], groups, GraphRenderHint.Compact);
     }
 
-    private static List<GraphGroup> BuildGroups(IReadOnlyList<Entry> entries) {
+    private static List<GraphGroup> BuildGroups(IReadOnlyList<HostEntry> entries) {
         var groups = new List<GraphGroup>();
 
-        IOrderedEnumerable<IGrouping<string, Entry>> bySubnet = entries
+        IOrderedEnumerable<IGrouping<string, HostEntry>> bySubnet = entries
             .GroupBy(e => e.Subnet, StringComparer.Ordinal)
             .OrderBy(g => g.Key, StringComparer.Ordinal);
 
-        foreach (IGrouping<string, Entry> subnetGroup in bySubnet) {
-            var subnetId = "g_" + Slug(subnetGroup.Key!);
+        foreach (IGrouping<string, HostEntry> subnetGroup in bySubnet) {
+            var subnetId = "g_" + Slug(subnetGroup.Key);
 
-            // Inner groups keyed by parent hardware. Entries with no parent
-            // hardware fall directly into the subnet group.
             var directNodes = new List<string>();
-            IOrderedEnumerable<IGrouping<string?, Entry>> byHardware = subnetGroup
+            IOrderedEnumerable<IGrouping<string?, HostEntry>> byHardware = subnetGroup
                 .GroupBy(e => e.HardwareName)
                 .OrderBy(g => g.Key ?? string.Empty, StringComparer.OrdinalIgnoreCase);
 
-            foreach (IGrouping<string?, Entry> hwGroup in byHardware) {
+            foreach (IGrouping<string?, HostEntry> hwGroup in byHardware) {
                 if (hwGroup.Key is null) {
-                    directNodes.AddRange(hwGroup.Select(e => e.Resource.Name));
+                    directNodes.AddRange(hwGroup.Select(e => e.System.Name));
                     continue;
                 }
 
@@ -89,33 +104,30 @@ public class BuildLogicalGraphUseCase(IResourceCollection repo) : IUseCase {
                 groups.Add(new GraphGroup(
                     hwGroupId,
                     hwGroup.Key,
-                    hwGroup.Select(e => e.Resource.Name).ToList(),
+                    hwGroup.Select(e => e.System.Name).ToList(),
                     subnetId));
             }
 
-            groups.Add(new GraphGroup(subnetId, subnetGroup.Key!, directNodes, null));
+            groups.Add(new GraphGroup(subnetId, subnetGroup.Key, directNodes, null));
         }
 
         return groups;
     }
 
-    private static string NodeKind(Resource resource) {
-        if (resource is Service) return "Service";
-        if (resource is SystemResource sys) {
-            if (string.IsNullOrWhiteSpace(sys.Type)) return "System";
-            // "vm" → "Vm", "hypervisor" → "Hypervisor"; we look these up in the
-            // serialiser's shape map case-insensitively, so casing doesn't
-            // matter — but a canonical form keeps test assertions tidy.
-            var t = sys.Type.Trim().ToLowerInvariant();
-            return t switch {
-                "hypervisor" => "Hypervisor",
-                "vm" => "Vm",
-                "container" => "Container",
-                _ => "System"
-            };
-        }
+    private static string NodeKind(SystemResource sys) {
+        if (string.IsNullOrWhiteSpace(sys.Type)) return "System";
+        var t = sys.Type.Trim().ToLowerInvariant();
+        return t switch {
+            "hypervisor" => "Hypervisor",
+            "vm" => "Vm",
+            "container" => "Container",
+            _ => "System"
+        };
+    }
 
-        return resource.Kind;
+    private static string? ServiceDetail(Service service) {
+        var port = service.Network?.Port;
+        return port.HasValue ? ":" + port.Value : null;
     }
 
     private static string? FindIp(Resource resource, Dictionary<string, Resource> byName) {
@@ -167,28 +179,10 @@ public class BuildLogicalGraphUseCase(IResourceCollection repo) : IUseCase {
         return new string(chars);
     }
 
-    private static string? BuildSubtitle(Resource resource, string? ip) {
-        // Services: ip:port (port from Network.Port if present). The ip is
-        // whatever the runsOn chain resolves to — it may belong to the host,
-        // not the service itself, but that's the relevant address for users.
-        if (resource is Service service) {
-            var port = service.Network?.Port;
-            if (!string.IsNullOrWhiteSpace(ip) && port.HasValue) return $"{ip}:{port}";
-            if (!string.IsNullOrWhiteSpace(ip)) return ip;
-            return port.HasValue ? $":{port}" : null;
-        }
-
-        // Systems: just their own IP. We don't show ports for systems because
-        // the data model doesn't track listening ports at the system level.
-        if (resource is SystemResource system && !string.IsNullOrWhiteSpace(system.Ip))
-            return system.Ip;
-
-        return null;
-    }
-
-    private readonly record struct Entry(
-        Resource Resource,
+    private readonly record struct HostEntry(
+        SystemResource System,
         string Subnet,
         string? HardwareName,
-        string? Subtitle);
+        string? Ip,
+        IReadOnlyList<GraphNodeRow> Rows);
 }
