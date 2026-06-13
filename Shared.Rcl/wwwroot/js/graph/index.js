@@ -172,7 +172,7 @@
         setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
-    function downloadSvg(elementId, filename) {
+    function downloadSvg(elementId, filename, background) {
         const host = document.getElementById(elementId);
         if (!host) {
             console.warn(`[rackpeekGraph] element '${elementId}' not found`);
@@ -204,6 +204,28 @@
             }
         }
 
+        // Inject a full-bleed background rect so exports match the in-app
+        // appearance instead of rendering on a transparent canvas (which
+        // shows as white in most viewers / dark in others depending on OS).
+        const bg = (background ?? "#18181b").trim();
+        if (bg && bg.toLowerCase() !== "transparent" && bg.toLowerCase() !== "none") {
+            const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            const vbParts = (vb || "").split(/\s+/);
+            if (vbParts.length === 4) {
+                rect.setAttribute("x", vbParts[0]);
+                rect.setAttribute("y", vbParts[1]);
+                rect.setAttribute("width", vbParts[2]);
+                rect.setAttribute("height", vbParts[3]);
+            } else {
+                rect.setAttribute("x", "0");
+                rect.setAttribute("y", "0");
+                rect.setAttribute("width", "100%");
+                rect.setAttribute("height", "100%");
+            }
+            rect.setAttribute("fill", bg);
+            clone.insertBefore(rect, clone.firstChild);
+        }
+
         const serialiser = new XMLSerializer();
         const body = serialiser.serializeToString(clone);
         const xml = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' + body;
@@ -216,5 +238,141 @@
             filename);
     }
 
-    window.rackpeekGraph = { render, downloadSvg, downloadText };
+    function buildExportSvg(host, background) {
+        const svg = host.querySelector("svg");
+        if (!svg) return null;
+
+        const clone = svg.cloneNode(true);
+        if (!clone.getAttribute("xmlns")) {
+            clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+        }
+        if (!clone.getAttribute("xmlns:xlink")) {
+            clone.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+        }
+
+        // Prefer viewBox dimensions — Mermaid sets `width="100%"` on the
+        // live SVG so that the responsive page layout can size it. Parsing
+        // that as a number gives 100 (px), producing a postage-stamp PNG.
+        // The viewBox carries the real document dimensions.
+        const vb = clone.getAttribute("viewBox");
+        const vbParts = (vb || "").split(/\s+/);
+        let width = 0, height = 0;
+        if (vbParts.length === 4) {
+            width = parseFloat(vbParts[2]) || 0;
+            height = parseFloat(vbParts[3]) || 0;
+        }
+        if (!width || !height) {
+            const rect = svg.getBoundingClientRect();
+            if (!width) width = rect.width;
+            if (!height) height = rect.height;
+        }
+        // Pin explicit pixel dimensions so `new Image()` knows how to size
+        // the bitmap. Strip any % units inherited from the live element.
+        clone.setAttribute("width", String(width));
+        clone.setAttribute("height", String(height));
+        clone.removeAttribute("style");
+
+        const bg = (background ?? "#18181b").trim();
+        if (bg && bg.toLowerCase() !== "transparent" && bg.toLowerCase() !== "none") {
+            const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            if (vbParts.length === 4) {
+                rect.setAttribute("x", vbParts[0]);
+                rect.setAttribute("y", vbParts[1]);
+                rect.setAttribute("width", vbParts[2]);
+                rect.setAttribute("height", vbParts[3]);
+            } else {
+                rect.setAttribute("x", "0");
+                rect.setAttribute("y", "0");
+                rect.setAttribute("width", String(width));
+                rect.setAttribute("height", String(height));
+            }
+            rect.setAttribute("fill", bg);
+            clone.insertBefore(rect, clone.firstChild);
+        }
+
+        const serialiser = new XMLSerializer();
+        const body = serialiser.serializeToString(clone);
+        return { xml: body, width, height };
+    }
+
+    function downloadSvg(elementId, filename, background) {
+        const host = document.getElementById(elementId);
+        if (!host) {
+            console.warn(`[rackpeekGraph] element '${elementId}' not found`);
+            return;
+        }
+        const built = buildExportSvg(host, background);
+        if (!built) {
+            console.warn(`[rackpeekGraph] no SVG in element '${elementId}' to export`);
+            return;
+        }
+        const xml = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' + built.xml;
+        triggerDownload(new Blob([xml], { type: "image/svg+xml;charset=utf-8" }), filename);
+    }
+
+    function downloadPng(elementId, filename, background, scale) {
+        const host = document.getElementById(elementId);
+        if (!host) {
+            console.warn(`[rackpeekGraph] element '${elementId}' not found`);
+            return Promise.resolve();
+        }
+        const built = buildExportSvg(host, background);
+        if (!built || !built.width || !built.height) {
+            console.warn(`[rackpeekGraph] cannot rasterise SVG in element '${elementId}'`);
+            return Promise.resolve();
+        }
+
+        // Render at 2× DPI by default so the PNG is sharp on retina displays
+        // and when zoomed in for documentation.
+        const ratio = scale && scale > 0 ? scale : 2;
+
+        // A data URL (vs Blob URL) avoids a class of foreignObject taint
+        // issues in some browsers — the SVG is treated as same-origin and
+        // doesn't get caught by the canvas security checks. The trade-off
+        // is a longer string, which is fine for diagram-sized payloads.
+        const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(built.xml);
+
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = Math.ceil(built.width * ratio);
+                    canvas.height = Math.ceil(built.height * ratio);
+                    const ctx = canvas.getContext("2d");
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    canvas.toBlob((png) => {
+                        if (png) {
+                            triggerDownload(png, filename);
+                        } else {
+                            // Tainted canvas — fall back to toDataURL which
+                            // throws SecurityError instead of returning null.
+                            try {
+                                const dataUrl = canvas.toDataURL("image/png");
+                                fetch(dataUrl)
+                                    .then(r => r.blob())
+                                    .then(b => triggerDownload(b, filename))
+                                    .catch(e => console.warn("[rackpeekGraph] PNG fallback failed", e))
+                                    .finally(resolve);
+                                return;
+                            } catch (e) {
+                                console.warn("[rackpeekGraph] canvas tainted, cannot export PNG", e);
+                            }
+                        }
+                        resolve();
+                    }, "image/png");
+                } catch (e) {
+                    console.warn("[rackpeekGraph] PNG render failed", e);
+                    resolve();
+                }
+            };
+            img.onerror = (err) => {
+                console.warn("[rackpeekGraph] SVG could not be loaded as image (likely a foreignObject/HTML-label rendering issue in this browser)", err);
+                resolve();
+            };
+            img.src = url;
+        });
+    }
+
+    window.rackpeekGraph = { render, downloadSvg, downloadPng, downloadText };
 })();

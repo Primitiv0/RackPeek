@@ -182,23 +182,34 @@ public sealed class YamlResourceCollection(
     }
 
     public async Task LoadAsync() {
-        var yaml = await fileStore.ReadAllTextAsync(filePath);
+        // Routes.razor calls LoadAsync on every Blazor circuit init, so
+        // multiple tabs / fresh page loads can run this concurrently. Without
+        // the lock, two callers can interleave Resources.Clear() and
+        // AddRange() and corrupt the List<T>'s internal _size, producing
+        // "Index was outside the bounds of the array" out of List.Clear.
+        await resourceCollection.FileLock.WaitAsync();
+        try {
+            var yaml = await fileStore.ReadAllTextAsync(filePath);
 
-        YamlRoot root = await migrationService.DeserializeAsync(
-            yaml,
-            async originalYaml => await BackupOriginalAsync(originalYaml),
-            async migratedRoot => await SaveRootAsync(migratedRoot)
-        );
+            YamlRoot root = await migrationService.DeserializeAsync(
+                yaml,
+                async originalYaml => await BackupOriginalAsync(originalYaml),
+                async migratedRoot => await SaveRootAsync(migratedRoot)
+            );
 
-        resourceCollection.Resources.Clear();
+            resourceCollection.Resources.Clear();
 
-        if (root.Resources != null)
-            resourceCollection.Resources.AddRange(root.Resources);
+            if (root.Resources != null)
+                resourceCollection.Resources.AddRange(root.Resources);
 
-        resourceCollection.Connections.Clear();
+            resourceCollection.Connections.Clear();
 
-        if (root.Connections != null)
-            resourceCollection.Connections.AddRange(root.Connections);
+            if (root.Connections != null)
+                resourceCollection.Connections.AddRange(root.Connections);
+        }
+        finally {
+            resourceCollection.FileLock.Release();
+        }
     }
 
     public Task AddAsync(Resource resource) {
