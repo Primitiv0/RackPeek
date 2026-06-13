@@ -53,3 +53,27 @@ Sleep 0.5
 Type "rpk services subnets"
 Enter
 Sleep 2
+
+Type "clear"
+Enter
+Sleep 0.5
+
+# New in v2.0.0 — tags
+Type "rpk servers tag add proxmox-node01 prod"
+Enter
+Sleep 1
+Type "rpk servers tag add proxmox-node02 prod"
+Enter
+Sleep 1
+Type "rpk tags show prod"
+Enter
+Sleep 3
+
+Type "clear"
+Enter
+Sleep 0.5
+
+# New in v2.0.0 — graph diagrams (preview the Mermaid source)
+Type "rpk graph topology | head -15"
+Enter
+Sleep 3
